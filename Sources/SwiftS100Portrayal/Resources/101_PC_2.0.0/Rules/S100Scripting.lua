@@ -726,37 +726,37 @@ end
 Debug = {}
 
 function Debug.Break()
-	if HostDebuggerEntry ~= nil then
+	if HostDebuggerEntry then
 		HostDebuggerEntry('break')
 	end
 end
 
 function Debug.Trace(message)
-	if HostDebuggerEntry ~= nil then
+	if HostDebuggerEntry then
 		HostDebuggerEntry('trace', message)
 	end
 end
 
 function Debug.StartPerformance(name)
-	if HostDebuggerEntry ~= nil then
+	if HostDebuggerEntry then
 		HostDebuggerEntry('start_performance', name)
 	end
 end
 
 function Debug.StopPerformance(name)
-	if HostDebuggerEntry ~= nil then
+	if HostDebuggerEntry then
 		HostDebuggerEntry('stop_performance', name)
 	end
 end
 
 function Debug.ResetPerformance(name)
-	if HostDebuggerEntry ~= nil then
+	if HostDebuggerEntry then
 		HostDebuggerEntry('reset_performance', name)
 	end
 end
 
 function Debug.FirstChanceError(message, depth)
-	if HostDebuggerEntry ~= nil then
+	if HostDebuggerEntry then
 		HostDebuggerEntry('first_chance_error', message, depth)
 	end
 end

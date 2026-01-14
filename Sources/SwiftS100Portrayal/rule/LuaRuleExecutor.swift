@@ -69,6 +69,7 @@ public class LuaRuleExecutor {
     private func registerHostFunctions() {
         if debug {
             lua.registerFunction(.init(name: "HostDebuggerEntry", parameters: [String.arg, String.arg], fn: HostDebuggerEntry(_:)))
+            lua.registerFunction(.init(name: "HostDebuggerEntry", parameters: [String.arg, String.arg, String.arg], fn: HostDebuggerEntry(_:)))
         }
 
         lua.registerFunction(.init(name: "HostGetFeatureIDs", fn: HostGetFeatureIDs(_:)))
@@ -82,6 +83,8 @@ public class LuaRuleExecutor {
         lua.registerFunction(.init(name: "HostGetFeatureAssociationTypeCodes", fn: HostGetFeatureAssociationTypeCodes(_:)))
         lua.registerFunction(.init(name: "HostGetFeatureTypeInfo", parameters: [String.arg], fn: HostGetFeatureTypeInfo(_:)))
         lua.registerFunction(.init(name: "HostFeatureGetSpatialAssociations", parameters: [String.arg], fn: HostFeatureGetSpatialAssociations(_:)))
+        lua.registerFunction(.init(name: "HostFeatureGetAssociatedInformationIDs", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetAssociatedInformationIDs(_:)))
+        lua.registerFunction(.init(name: "HostPortrayalEmit", parameters: [String.arg, String.arg, String.arg], fn: HostPortrayalEmit(_:)))
 
     }
     
@@ -92,7 +95,7 @@ public class LuaRuleExecutor {
         self.dsf = dsf
 
         for feature in dsf.featureTypeRecords() {
-            let featureId = LuaRuleExecutor.createFeatureId(dsf: dsf, feature: feature)
+            let featureId = LuaRuleExecutor.createRecordId(dsf: dsf, record: feature)
             featureById[featureId] = feature
         }
 
@@ -117,7 +120,7 @@ public class LuaRuleExecutor {
         
         var featureIdsToPortray: Set<String> = []
         for feature in features {
-            let featureId = LuaRuleExecutor.createFeatureId(dsf: dsf, feature: feature)
+            let featureId = LuaRuleExecutor.createRecordId(dsf: dsf, record: feature)
             featureIdsToPortray.insert(featureId)
         }
         
@@ -131,9 +134,12 @@ public class LuaRuleExecutor {
         return []
     }
     
-    private static func createFeatureId(dsf: DataSetFile, feature: FeatureTypeRecord) -> String {
+    private static func createRecordId(dsf: DataSetFile, record: Record) -> String {
+        return createRecordId(dsf: dsf, recordIdentifier: record.recordIdentifier())
+    }
+    
+    private static func createRecordId(dsf: DataSetFile, recordIdentifier: RecordIdentifier) -> String {
         let dsnm = dsf.generalInformation?.dsid.dsnm ?? "unknown"
-        let recordIdentifier = feature.frid.recordIdentifier
         return "\(dsnm):\(recordIdentifier.rcnm):\(recordIdentifier.rcid)"
     }
     
@@ -169,9 +175,9 @@ public class LuaRuleExecutor {
     private func HostDebuggerEntry(_ args: Arguments) -> SwiftReturnValue {
         let key = args.string
         let name = args.string
-        if key != "start_performance", key != "stop_performance" {
+        //if key != "start_performance", key != "stop_performance" {
             print("DEBUG: HostDebuggerEntry. \(key), \(name)")
-        }
+        //}
         return .nothing
     }
     
@@ -212,34 +218,133 @@ public class LuaRuleExecutor {
     
     private func HostGetRoleTypeCodes(_ args: Arguments) -> SwiftReturnValue {
         print("DEBUG: HostGetRoleTypeCodes")
-        // TODO: implement
-        return .nothing
+        return .value(toLuaTable(featureCatalogue.roleByCode.keys.sorted()))
     }
     
     private func HostGetInformationAssociationTypeCodes(_ args: Arguments) -> SwiftReturnValue {
         print("DEBUG: HostGetInformationAssociationTypeCodes")
-        // TODO: implement
-        return .nothing
+        return .value(toLuaTable(featureCatalogue.informationAssociationByCode.keys.sorted()))
     }
     
     private func HostGetFeatureAssociationTypeCodes(_ args: Arguments) -> SwiftReturnValue {
         print("DEBUG: HostGetFeatureAssociationTypeCodes")
-        // TODO: implement
-        return .nothing
+        return .value(toLuaTable(featureCatalogue.featureAssociationByCode.keys.sorted()))
+    }
+    
+    private func luaCreateFeatureType(_ featureType: FeatureType) -> Value? {
+        return nil
     }
     
     private func HostGetFeatureTypeInfo(_ args: Arguments) -> SwiftReturnValue {
         print("DEBUG: HostGetFeatureTypeInfo")
         let code = args.string
+        
+        // TODO: a cache for this?
+        
+        guard let featureType = featureCatalogue.featureTypeByCode[code] else {
+            return .nothing
+        }
+        
+        if let ft = luaCreateFeatureType(featureType) {
+            return .value(ft)
+        }
+        
         // TODO: implement
         return .nothing
     }
     
+    private func luaCreateSpatialAssociation(_ spas: SPAS) -> Value? {
+        
+        guard let dsf = dsf else {
+            return nil
+        }
+        
+        guard let record = dsf.record(forIdentifier: spas.referencedRecordIdentifier) else {
+            return nil
+        }
+        
+        var spatialType: String = "Unknown"
+        if let geometryRecord = record as? GeometryRecord {
+            spatialType = geometryRecord.spatialType()
+        }
+        
+        var orientation: String = "Unknown"
+        switch spas.ornt {
+        case SPAS.orntForvard:
+            orientation = "Forward"
+        case SPAS.orntReverse:
+            orientation = "Reverse"
+        default:
+            break
+        }
+        
+        let recordId = LuaRuleExecutor.createRecordId(dsf: dsf, record: record)
+        
+        let args: [String] = [spatialType, recordId, orientation, spas.smin.description, spas.smax.description]
+        
+        do {
+            let result = try lua.execute(string: "local args = {...} \n CreateSpatialAssociation(args[0]);", args: args)
+            if case .values(let values) = result, values.count == 1, let v = values.first {
+                return v
+            }
+            return nil
+        } catch {
+            print("ERROR: CreateSpatialAssociation problem. \(error)")
+        }
+        
+        return nil
+    }
+    
     private func HostFeatureGetSpatialAssociations(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostFeatureGetSpatialAssociations")
-        let id = args.string
+        let featureId = args.string
+        guard let feature = featureById[featureId] else {
+            return .nothing
+        }
+        
+        var spass: [any Value] = []
+        for spas in feature.spass() {
+            if let r = luaCreateSpatialAssociation(spas) {
+                spass.append(r)
+            }
+        }
+        
+        print("DEBUG: HostFeatureGetSpatialAssociations. \(featureId)")
+        return .value(toLuaTable(spass))
+    }
+    
+    private func HostFeatureGetAssociatedInformationIDs(_ args: Arguments) -> SwiftReturnValue {
+        let featureId = args.string
+        let associationCode = args.string
+        let roleCode = args.string
+        print("DEBUG: HostFeatureGetAssociatedInformationIDs. \(featureId) \(associationCode) \(roleCode)")
+        
+        guard let dsf = dsf else {
+            return .nothing
+        }
+        
+        guard let feature = featureById[featureId] else {
+            return .nothing
+        }
+        
+        var associatedFeatureIds: [String] = []
+        for fasc in feature.fascs() {
+            // TODO: filter on associationCode and roleCode
+            let associatedFeatureId = LuaRuleExecutor.createRecordId(dsf: dsf, recordIdentifier: fasc.referencedRecordIdentifier)
+            associatedFeatureIds.append(associatedFeatureId)
+        }
+        
+        return .value(toLuaTable(associatedFeatureIds))
+    }
+    
+    private func HostPortrayalEmit(_ args: Arguments) -> SwiftReturnValue {
+        
+        let featureId = args.string
+        let drawingInstructions = args.string
+        let observedParameters = args.string
+        
+        print("DEBUG: HostPortrayalEmit. featureId: \(featureId), drawing instructions: \(drawingInstructions), observed parameters:  \(observedParameters)")
         // TODO: implement
-        return .value(toLuaTable([]))
+        return .value(true as Value)
     }
     
 }

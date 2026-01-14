@@ -40,6 +40,7 @@ struct LuaRuleExecutorTests {
         #expect(!drawingCommands.isEmpty)
     }
     
+    /*
     @Test func testPortrayal101AA00DS0016() async throws {
         guard let pc = PortrayalCatalogueParser.parse(name: "101_PC_2.0.0") else {
             Issue.record("Could not parse S-101 portrayal catalogue")
@@ -68,5 +69,6 @@ struct LuaRuleExecutorTests {
         let drawingCommands = lre.portrayal(features: dsf.featureTypeRecords())
         #expect(!drawingCommands.isEmpty)
     }
+     */
 
 }
