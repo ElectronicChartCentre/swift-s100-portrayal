@@ -27,7 +27,9 @@ class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
 
     static func parse(name: String) -> PortrayalCatalogue? {
         
-        let path = "Resources/\(name)/portrayal_catalogue"
+        let portrayalCataloguePath = "Resources/\(name)"
+        
+        let path = "\(portrayalCataloguePath)/portrayal_catalogue"
         guard let url = Bundle.module.url(forResource: path, withExtension: "xml") else {
             print("DEBUG: could not find file. \(path).xml")
             return nil
@@ -35,21 +37,20 @@ class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
         
         do {
             let data = try Data.init(contentsOf: url)
+            //return parse(data: data)
             
-            return parse(data: data)
+            let parser = PortrayalCatalogueParser()
+            
+            let xmlParser = XMLParser(data: data)
+            xmlParser.delegate = parser
+            xmlParser.parse()
+            
+            return PortrayalCatalogue(path: portrayalCataloguePath, areaFillById: parser.areaFillById, ruleFileById: parser.ruleFileById, symbolById: parser.symbolById, lineStyleById: parser.lineStyleById, colorProfileById: parser.colorProfileById, styleSheetById: parser.styleSheetById, viewingGroupById: parser.viewingGroupById)
+
+            
         } catch {
             return nil
         }
-    }
-    
-    static func parse(data: Data) -> PortrayalCatalogue? {
-        let parser = PortrayalCatalogueParser()
-        
-        let xmlParser = XMLParser(data: data)
-        xmlParser.delegate = parser
-        xmlParser.parse()
-        
-        return PortrayalCatalogue(areaFillById: parser.areaFillById, ruleFileById: parser.ruleFileById, symbolById: parser.symbolById, lineStyleById: parser.lineStyleById, colorProfileById: parser.colorProfileById, styleSheetById: parser.styleSheetById, viewingGroupById: parser.viewingGroupById)
     }
     
     func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
