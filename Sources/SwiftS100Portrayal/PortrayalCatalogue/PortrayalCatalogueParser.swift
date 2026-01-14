@@ -37,7 +37,6 @@ class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
         
         do {
             let data = try Data.init(contentsOf: url)
-            //return parse(data: data)
             
             let parser = PortrayalCatalogueParser()
             

@@ -5,11 +5,13 @@
 
 import Foundation
 import SwiftS101
+import SwiftS100FeatureCatalogue
 import SwiftyLua
 
 public class LuaRuleExecutor {
     
     private let portrayalCatalogue: PortrayalCatalogue
+    private let featureCatalogue: FeatureCatalogue
     
     private let lua: LuaVM
     
@@ -18,13 +20,14 @@ public class LuaRuleExecutor {
     
     private let debug: Bool = true
     
-    public init(portrayalCatalogue: PortrayalCatalogue) {
+    public init(portrayalCatalogue: PortrayalCatalogue, featureCatalogue: FeatureCatalogue) {
         self.portrayalCatalogue = portrayalCatalogue
+        self.featureCatalogue = featureCatalogue
         self.lua = LuaVM()
         
-        //if debug {
+        if debug {
             self.lua.debuggingEnabled = true
-        //}
+        }
         
         setPath()
         loadPortrayalCatalogue()
@@ -71,6 +74,15 @@ public class LuaRuleExecutor {
         lua.registerFunction(.init(name: "HostGetFeatureIDs", fn: HostGetFeatureIDs(_:)))
         lua.registerFunction(.init(name: "HostFeatureGetCode", parameters: [String.arg], fn: HostFeatureGetCode(_:)))
         lua.registerFunction(.init(name: "HostGetFeatureTypeCodes", fn: HostGetFeatureTypeCodes(_:)))
+        lua.registerFunction(.init(name: "HostGetInformationTypeCodes", fn: HostGetInformationTypeCodes(_:)))
+        lua.registerFunction(.init(name: "HostGetSimpleAttributeTypeCodes", fn: HostGetSimpleAttributeTypeCodes(_:)))
+        lua.registerFunction(.init(name: "HostGetComplexAttributeTypeCodes", fn: HostGetComplexAttributeTypeCodes(_:)))
+        lua.registerFunction(.init(name: "HostGetRoleTypeCodes", fn: HostGetRoleTypeCodes(_:)))
+        lua.registerFunction(.init(name: "HostGetInformationAssociationTypeCodes", fn: HostGetInformationAssociationTypeCodes(_:)))
+        lua.registerFunction(.init(name: "HostGetFeatureAssociationTypeCodes", fn: HostGetFeatureAssociationTypeCodes(_:)))
+        lua.registerFunction(.init(name: "HostGetFeatureTypeInfo", parameters: [String.arg], fn: HostGetFeatureTypeInfo(_:)))
+        lua.registerFunction(.init(name: "HostFeatureGetSpatialAssociations", parameters: [String.arg], fn: HostFeatureGetSpatialAssociations(_:)))
+
     }
     
     func setUp(dsf: DataSetFile) {
@@ -157,8 +169,10 @@ public class LuaRuleExecutor {
     private func HostDebuggerEntry(_ args: Arguments) -> SwiftReturnValue {
         let key = args.string
         let name = args.string
-        print("DEBUG: HostDebuggerEntry. \(key), \(name)")
-        return .value(1)
+        if key != "start_performance", key != "stop_performance" {
+            print("DEBUG: HostDebuggerEntry. \(key), \(name)")
+        }
+        return .nothing
     }
     
     private func HostGetFeatureIDs(_ args: Arguments) -> SwiftReturnValue {
@@ -167,18 +181,65 @@ public class LuaRuleExecutor {
     }
     
     private func HostFeatureGetCode(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostFeatureGetCode")
         let featureId = args.string
         guard let feature = featureById[featureId] else {
+            print("DEBUG: HostFeatureGetCode. unknown feature. \(featureId)")
             return .nothing
         }
+        print("DEBUG: HostFeatureGetCode. \(feature.frid.ftcd)")
         return .value(feature.frid.ftcd)
     }
     
     private func HostGetFeatureTypeCodes(_ args: Arguments) -> SwiftReturnValue {
         print("DEBUG: HostGetFeatureTypeCodes")
-        // Array containing all feature type codes as defined in the Feature Catalogue.
+        return .value(toLuaTable(featureCatalogue.featureTypeByCode.keys.sorted()))
+    }
+    
+    private func HostGetInformationTypeCodes(_ args: Arguments) -> SwiftReturnValue {
+        print("DEBUG: HostGetInformationTypeCodes")
+        return .value(toLuaTable(featureCatalogue.informationTypeByCode.keys.sorted()))
+    }
+
+    private func HostGetSimpleAttributeTypeCodes(_ args: Arguments) -> SwiftReturnValue {
+        print("DEBUG: HostGetSimpleAttributeTypeCodes")
+        return .value(toLuaTable(featureCatalogue.simpleAttributeByCode.keys.sorted()))
+    }
+    
+    private func HostGetComplexAttributeTypeCodes(_ args: Arguments) -> SwiftReturnValue {
+        print("DEBUG: HostGetComplexAttributeTypeCodes")
+        return .value(toLuaTable(featureCatalogue.complexAttributeByCode.keys.sorted()))
+    }
+    
+    private func HostGetRoleTypeCodes(_ args: Arguments) -> SwiftReturnValue {
+        print("DEBUG: HostGetRoleTypeCodes")
+        // TODO: implement
         return .nothing
+    }
+    
+    private func HostGetInformationAssociationTypeCodes(_ args: Arguments) -> SwiftReturnValue {
+        print("DEBUG: HostGetInformationAssociationTypeCodes")
+        // TODO: implement
+        return .nothing
+    }
+    
+    private func HostGetFeatureAssociationTypeCodes(_ args: Arguments) -> SwiftReturnValue {
+        print("DEBUG: HostGetFeatureAssociationTypeCodes")
+        // TODO: implement
+        return .nothing
+    }
+    
+    private func HostGetFeatureTypeInfo(_ args: Arguments) -> SwiftReturnValue {
+        print("DEBUG: HostGetFeatureTypeInfo")
+        let code = args.string
+        // TODO: implement
+        return .nothing
+    }
+    
+    private func HostFeatureGetSpatialAssociations(_ args: Arguments) -> SwiftReturnValue {
+        print("DEBUG: HostFeatureGetSpatialAssociations")
+        let id = args.string
+        // TODO: implement
+        return .value(toLuaTable([]))
     }
     
 }

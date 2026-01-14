@@ -7,12 +7,18 @@ import Testing
 import Foundation
 @testable import SwiftS100Portrayal
 @testable import SwiftS101
+@testable import SwiftS100FeatureCatalogue
 
 struct LuaRuleExecutorTests {
 
     @Test func testPortrayal101AA00DS0003() async throws {
         guard let pc = PortrayalCatalogueParser.parse(name: "101_PC_2.0.0") else {
             Issue.record("Could not parse S-101 portrayal catalogue")
+            return
+        }
+        
+        guard let fc = FeatureCatalogues.defaultVersion(prodSpecNr: 101) else {
+            Issue.record("Could not parse S-101 feature catalogue")
             return
         }
         
@@ -28,15 +34,20 @@ struct LuaRuleExecutorTests {
             return
         }
 
-        let lre = LuaRuleExecutor(portrayalCatalogue: pc)
+        let lre = LuaRuleExecutor(portrayalCatalogue: pc, featureCatalogue: fc)
         lre.setUp(dsf: dsf)
         let drawingCommands = lre.portrayal(features: dsf.featureTypeRecords())
-        //#expect(!drawingCommands.isEmpty)
+        #expect(!drawingCommands.isEmpty)
     }
     
     @Test func testPortrayal101AA00DS0016() async throws {
         guard let pc = PortrayalCatalogueParser.parse(name: "101_PC_2.0.0") else {
             Issue.record("Could not parse S-101 portrayal catalogue")
+            return
+        }
+        
+        guard let fc = FeatureCatalogues.defaultVersion(prodSpecNr: 101) else {
+            Issue.record("Could not parse S-101 feature catalogue")
             return
         }
         
@@ -52,10 +63,10 @@ struct LuaRuleExecutorTests {
             return
         }
 
-        let lre = LuaRuleExecutor(portrayalCatalogue: pc)
+        let lre = LuaRuleExecutor(portrayalCatalogue: pc, featureCatalogue: fc)
         lre.setUp(dsf: dsf)
         let drawingCommands = lre.portrayal(features: dsf.featureTypeRecords())
-        //#expect(!drawingCommands.isEmpty)
+        #expect(!drawingCommands.isEmpty)
     }
 
 }
