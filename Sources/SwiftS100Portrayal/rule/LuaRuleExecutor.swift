@@ -69,7 +69,7 @@ public class LuaRuleExecutor {
     private func registerHostFunctions() {
         if debug {
             lua.registerFunction(.init(name: "HostDebuggerEntry", parameters: [String.arg, String.arg], fn: HostDebuggerEntry(_:)))
-            lua.registerFunction(.init(name: "HostDebuggerEntry", parameters: [String.arg, String.arg, String.arg], fn: HostDebuggerEntry(_:)))
+            lua.registerFunction(.init(name: "HostDebuggerEntry", parameters: [String.arg, String.arg, Nil.arg], fn: HostDebuggerEntry(_:)))
         }
 
         lua.registerFunction(.init(name: "HostGetFeatureIDs", fn: HostGetFeatureIDs(_:)))
@@ -104,12 +104,7 @@ public class LuaRuleExecutor {
             contextParameters.append(cp)
         }
         
-        do {
-            try lua.execute(string: "return PortrayalInitializeContextParameters(...);", args: contextParameters)
-        } catch {
-            print("ERROR: PortrayalInitializeContextParameters failed. Error: \(error)")
-        }
-
+        let _ = call("PortrayalInitializeContextParameters", [toLuaTable(contextParameters)])
     }
 
     func portrayal(features: [FeatureTypeRecord]) -> [DrawingCommand] {
@@ -124,12 +119,7 @@ public class LuaRuleExecutor {
             featureIdsToPortray.insert(featureId)
         }
         
-        do {
-            let r = try lua.execute(string: "local args = {...} \n return PortrayalMain(args);", args: Array(featureIdsToPortray))
-            print("DEBUG: ret: \(r)")
-        } catch {
-            print("ERROR: PortrayalMain failed. Error: \(error)")
-        }
+        let _ = call("PortrayalMain", [toLuaTable(featureIdsToPortray.sorted())])
         
         return []
     }
@@ -144,22 +134,11 @@ public class LuaRuleExecutor {
     }
     
     private func luaPortrayalCreateContextParameter(_ cp: ContextParameter) -> Value? {
-        
         var args: [Value] = []
         args.append(cp.name)
         args.append(cp.type)
         args.append(cp.value)
-
-        do {
-            let result = try lua.execute(string: "local args = {...} \n return PortrayalCreateContextParameter(args[1], args[2], args[3]);", args: args)
-            if case .values(let values) = result, values.count == 1, let v = values.first {
-                return v
-            }
-            return nil
-        } catch {
-            print("ERROR: PortrayalCreateContextParameter failed. Error: \(error)")
-            return nil
-        }
+        return call("PortrayalCreateContextParameter", args)
     }
     
     private func toLuaTable(_ values: [any Value]) -> Table {
@@ -175,9 +154,7 @@ public class LuaRuleExecutor {
     private func HostDebuggerEntry(_ args: Arguments) -> SwiftReturnValue {
         let key = args.string
         let name = args.string
-        //if key != "start_performance", key != "stop_performance" {
-            print("DEBUG: HostDebuggerEntry. \(key), \(name)")
-        //}
+        print("DEBUG: HostDebuggerEntry. \(key), \(name)")
         return .nothing
     }
     
@@ -231,8 +208,93 @@ public class LuaRuleExecutor {
         return .value(toLuaTable(featureCatalogue.featureAssociationByCode.keys.sorted()))
     }
     
-    private func luaCreateFeatureType(_ featureType: FeatureType) -> Value? {
+    /**
+     * To make it easier to call Lua including handling of nil arguments
+     */
+    private func call(_ functionName: String, _ args: [Value?]) -> Value? {
+        
+        var nonNilArgs: [Value] = []
+        
+        var luaCode = "local args = {...} \n \(functionName)("
+        for arg in args {
+            if let arg = arg {
+                luaCode.append("args[\(nonNilArgs.count + 1)]")
+                nonNilArgs.append(arg)
+            } else {
+                luaCode.append("nil")
+            }
+            luaCode.append(",")
+        }
+        if luaCode.hasSuffix(",") {
+            luaCode.removeLast()
+        }
+        luaCode.append(")")
+        
+        do {
+            let result = try lua.execute(string: luaCode, args: nonNilArgs)
+            if case .values(let values) = result, values.count == 1, let v = values.first {
+                return v
+            }
+            return nil
+        } catch {
+            print("ERROR: \(functionName) problem. \(error)")
+        }
+        
         return nil
+    }
+    
+    private func luaCreateItem(_ item: Item) -> Value? {
+        var args: [Value?] = []
+        args.append(item.code)
+        args.append(item.name)
+        args.append(item.definition)
+        args.append(item.remarks)
+        args.append(toLuaTable(item.alias))
+        return call("CreateItem", args)
+    }
+    
+    private func luaCreateAttributeBinding(_ ab: AttributeBinding) -> Value? {
+        var args: [Value?] = []
+        args.append(ab.attributeReference)
+        args.append(0) // TODO: lower
+        args.append(1) // TODO: upper
+        args.append(ab.sequential)
+        args.append(toLuaTable([])) // TODO: permittedValues
+        return call("CreateAttributeBinding", args)
+    }
+    
+    private func luaCreateNamedType(_ namedType: NamedType) -> Value? {
+        var args: [Value] = []
+        args.append(luaCreateItem(namedType) ?? "")
+        args.append(namedType.isAbstract)
+
+        var luaAttributeBindings: [Value] = []
+        for attributeBinding in namedType.attributeBindings {
+            if let ab = luaCreateAttributeBinding(attributeBinding) {
+                luaAttributeBindings.append(ab)
+            }
+        }
+        args.append(toLuaTable(luaAttributeBindings))
+        
+        return call("CreateNamedType", args)
+    }
+    
+    private func luaCreateObjectType(_ objectType: ObjectType) -> Value? {
+        var args: [Value] = []
+        args.append(luaCreateNamedType(objectType) ?? "")
+        args.append(toLuaTable([])) // TODO: information bindings
+        return call("CreateObjectType", args)
+    }
+    
+    private func luaCreateFeatureType(_ featureType: FeatureType) -> Value? {
+        var args: [Value?] = []
+        args.append(luaCreateObjectType(featureType) ?? "")
+        args.append(featureType.featureUseType)
+        args.append(toLuaTable(featureType.permittedPrimitives))
+        args.append(toLuaTable([])) // TODO: featureBindings
+        args.append(featureType.superType)
+        args.append(toLuaTable(featureType.subType))
+        return call("CreateFeatureType", args)
     }
     
     private func HostGetFeatureTypeInfo(_ args: Arguments) -> SwiftReturnValue {
@@ -282,17 +344,7 @@ public class LuaRuleExecutor {
         
         let args: [String] = [spatialType, recordId, orientation, spas.smin.description, spas.smax.description]
         
-        do {
-            let result = try lua.execute(string: "local args = {...} \n CreateSpatialAssociation(args[0]);", args: args)
-            if case .values(let values) = result, values.count == 1, let v = values.first {
-                return v
-            }
-            return nil
-        } catch {
-            print("ERROR: CreateSpatialAssociation problem. \(error)")
-        }
-        
-        return nil
+        return call("CreateSpatialAssociation", args)
     }
     
     private func HostFeatureGetSpatialAssociations(_ args: Arguments) -> SwiftReturnValue {
