@@ -394,7 +394,12 @@ public class LuaRuleExecutor {
         let drawingInstructions = args.string
         let observedParameters = args.string
         
-        print("DEBUG: HostPortrayalEmit. featureId: \(featureId), drawing instructions: \(drawingInstructions), observed parameters:  \(observedParameters)")
+        var ftcd: String = ""
+        if let feature = featureById[featureId] {
+            ftcd = feature.frid.ftcd
+        }
+        
+        print("DEBUG: HostPortrayalEmit. featureId: \(featureId)(\(ftcd)), drawing instructions: \(drawingInstructions), observed parameters:  \(observedParameters)")
         // TODO: implement
         return .value(true as Value)
     }
