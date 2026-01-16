@@ -5,6 +5,11 @@
 
 import Foundation
 
+// FoundationXML needed on Linux and does not exist on macOS..
+#if canImport(FoundationXML)
+import FoundationXML
+#endif
+
 class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
     
     private var currentKV: [String: String] = [:]
