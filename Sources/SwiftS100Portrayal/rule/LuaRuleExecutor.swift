@@ -85,6 +85,9 @@ public class LuaRuleExecutor {
         lua.registerFunction(.init(name: "HostFeatureGetSpatialAssociations", parameters: [String.arg], fn: HostFeatureGetSpatialAssociations(_:)))
         lua.registerFunction(.init(name: "HostFeatureGetAssociatedInformationIDs", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetAssociatedInformationIDs(_:)))
         lua.registerFunction(.init(name: "HostGetComplexAttributeTypeInfo", parameters: [String.arg], fn: HostGetComplexAttributeTypeInfo(_:)))
+        lua.registerFunction(.init(name: "HostFeatureGetSimpleAttribute", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetSimpleAttribute(_:)))
+        lua.registerFunction(.init(name: "HostFeatureGetComplexAttributeCount", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetComplexAttributeCount(_:)))
+        lua.registerFunction(.init(name: "HostInformationTypeGetSimpleAttribute", parameters: [String.arg, String.arg, String.arg], fn: HostInformationTypeGetSimpleAttribute(_:)))
         lua.registerFunction(.init(name: "HostPortrayalEmit", parameters: [String.arg, String.arg, String.arg], fn: HostPortrayalEmit(_:)))
 
     }
@@ -134,6 +137,14 @@ public class LuaRuleExecutor {
     private static func createRecordId(dsf: DataSetFile, recordIdentifier: RecordIdentifier) -> String {
         let dsnm = dsf.generalInformation?.dsid.dsnm ?? "unknown"
         return "\(dsnm):\(recordIdentifier.rcnm):\(recordIdentifier.rcid)"
+    }
+    
+    private static func createRecordIdentifier(recordId: String) -> RecordIdentifier? {
+        let parts = recordId.split(separator: ":")
+        if let rcnm = Int(parts[1]), let rcid = Int(parts[2]) {
+            return RecordIdentifier(rcnm: rcnm, rcid: rcid)
+        }
+        return nil
     }
     
     private func luaPortrayalCreateContextParameter(_ cp: ContextParameter) -> Value? {
@@ -416,6 +427,79 @@ public class LuaRuleExecutor {
             return .nothing
         }
         return .value(luaCreateComplexAttribute(complexAttribute))
+    }
+    
+    private func HostFeatureGetSimpleAttribute(_ args: Arguments) -> SwiftReturnValue {
+        print("DEBUG: HostFeatureGetSimpleAttribute")
+        let featureId = args.string
+        let path = args.string
+        let attributeCode = args.string
+        
+        guard let dsf = dsf else {
+            return .nothing
+        }
+        
+        guard let feature = featureById[featureId] else {
+            return .nothing
+        }
+        
+        let attributePath = AttributePath(definition: path)
+
+        var values: [String] = []
+        for value in attributePath.resolveAttributePath(dsf: dsf, record: feature, atcd: attributeCode) {
+            // TODO: GetUnknownAttributeString?
+            values.append(value)
+        }
+        
+        return .value(toLuaTable(values))
+    }
+    
+    private func HostFeatureGetComplexAttributeCount(_ args: Arguments) -> SwiftReturnValue {
+        print("DEBUG: HostFeatureGetComplexAttributeCount")
+        let featureId = args.string
+        let path = args.string
+        let attributeCode = args.string
+        
+        guard let dsf = dsf else {
+            return .nothing
+        }
+        
+        guard let feature = featureById[featureId] else {
+            return .nothing
+        }
+        
+        let attributePath = AttributePath(definition: path)
+        
+        return .value(attributePath.resolveAttributePath(dsf: dsf, record: feature, atcd: attributeCode).count)
+    }
+    
+    private func HostInformationTypeGetSimpleAttribute(_ args: Arguments) -> SwiftReturnValue {
+        print("DEBUG: HostInformationTypeGetSimpleAttribute")
+        let informationTypeId = args.string
+        let path = args.string
+        let attributeCode = args.string
+        
+        guard let dsf = dsf else {
+            return .nothing
+        }
+        
+        guard let recordIdentifier = LuaRuleExecutor.createRecordIdentifier(recordId: informationTypeId) else {
+            return .nothing
+        }
+        
+        guard let record = dsf.record(forIdentifier: recordIdentifier) as? InformationTypeRecord else {
+            return .nothing
+        }
+        
+        let attributePath = AttributePath(definition: path)
+
+        var values: [String] = []
+        for value in attributePath.resolveAttributePath(dsf: dsf, record: record, atcd: attributeCode) {
+            // TODO: GetUnknownAttributeString?
+            values.append(value)
+        }
+        
+        return .value(toLuaTable(values))
     }
         
     private func HostPortrayalEmit(_ args: Arguments) -> SwiftReturnValue {
