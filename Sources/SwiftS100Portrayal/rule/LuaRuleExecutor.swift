@@ -84,6 +84,7 @@ public class LuaRuleExecutor {
         lua.registerFunction(.init(name: "HostGetFeatureTypeInfo", parameters: [String.arg], fn: HostGetFeatureTypeInfo(_:)))
         lua.registerFunction(.init(name: "HostFeatureGetSpatialAssociations", parameters: [String.arg], fn: HostFeatureGetSpatialAssociations(_:)))
         lua.registerFunction(.init(name: "HostFeatureGetAssociatedInformationIDs", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetAssociatedInformationIDs(_:)))
+        lua.registerFunction(.init(name: "HostGetComplexAttributeTypeInfo", parameters: [String.arg], fn: HostGetComplexAttributeTypeInfo(_:)))
         lua.registerFunction(.init(name: "HostPortrayalEmit", parameters: [String.arg, String.arg, String.arg], fn: HostPortrayalEmit(_:)))
 
     }
@@ -100,8 +101,10 @@ public class LuaRuleExecutor {
         }
 
         var contextParameters: [any Value] = []
-        if let cp = luaPortrayalCreateContextParameter(ContextParameter(name: "SafetyDepth", type: "real", value: "10")) {
-            contextParameters.append(cp)
+        for contextParameter in ContextParameters.defaultContextParameters().parameterByName.values {
+            if let cp = luaPortrayalCreateContextParameter(contextParameter) {
+                contextParameters.append(cp)
+            }
         }
         
         let _ = call("PortrayalInitializeContextParameters", [toLuaTable(contextParameters)])
@@ -215,7 +218,7 @@ public class LuaRuleExecutor {
         
         var nonNilArgs: [Value] = []
         
-        var luaCode = "local args = {...} \n \(functionName)("
+        var luaCode = "local args = {...} \n return \(functionName)("
         for arg in args {
             if let arg = arg {
                 luaCode.append("args[\(nonNilArgs.count + 1)]")
@@ -223,10 +226,10 @@ public class LuaRuleExecutor {
             } else {
                 luaCode.append("nil")
             }
-            luaCode.append(",")
+            luaCode.append(", ")
         }
-        if luaCode.hasSuffix(",") {
-            luaCode.removeLast()
+        if luaCode.hasSuffix(", ") {
+            luaCode.removeLast(2)
         }
         luaCode.append(")")
         
@@ -235,6 +238,8 @@ public class LuaRuleExecutor {
             if case .values(let values) = result, values.count == 1, let v = values.first {
                 return v
             }
+            
+            print("DEBUG: \(functionName) returned nil")
             return nil
         } catch {
             print("ERROR: \(functionName) problem. \(error)")
@@ -248,7 +253,7 @@ public class LuaRuleExecutor {
         args.append(item.code)
         args.append(item.name)
         args.append(item.definition)
-        args.append(item.remarks)
+        args.append(item.remarks ?? "what?")
         args.append(toLuaTable(item.alias))
         return call("CreateItem", args)
     }
@@ -256,10 +261,10 @@ public class LuaRuleExecutor {
     private func luaCreateAttributeBinding(_ ab: AttributeBinding) -> Value? {
         var args: [Value?] = []
         args.append(ab.attributeReference)
-        args.append(0) // TODO: lower
-        args.append(1) // TODO: upper
+        args.append(ab.multiplicity.lower)
+        args.append(ab.multiplicity.upper)
         args.append(ab.sequential)
-        args.append(toLuaTable([])) // TODO: permittedValues
+        args.append(toLuaTable(ab.permittedValues))
         return call("CreateAttributeBinding", args)
     }
     
@@ -269,7 +274,7 @@ public class LuaRuleExecutor {
         args.append(namedType.isAbstract)
 
         var luaAttributeBindings: [Value] = []
-        for attributeBinding in namedType.attributeBindings {
+        for attributeBinding in namedType.attributeBindingByName.values {
             if let ab = luaCreateAttributeBinding(attributeBinding) {
                 luaAttributeBindings.append(ab)
             }
@@ -311,7 +316,6 @@ public class LuaRuleExecutor {
             return .value(ft)
         }
         
-        // TODO: implement
         return .nothing
     }
     
@@ -360,7 +364,7 @@ public class LuaRuleExecutor {
             }
         }
         
-        print("DEBUG: HostFeatureGetSpatialAssociations. \(featureId)")
+        print("DEBUG: HostFeatureGetSpatialAssociations. \(featureId) -> \(feature.spass().count) \(spass.count)")
         return .value(toLuaTable(spass))
     }
     
@@ -381,6 +385,7 @@ public class LuaRuleExecutor {
         var associatedFeatureIds: [String] = []
         for fasc in feature.fascs() {
             // TODO: filter on associationCode and roleCode
+            
             let associatedFeatureId = LuaRuleExecutor.createRecordId(dsf: dsf, recordIdentifier: fasc.referencedRecordIdentifier)
             associatedFeatureIds.append(associatedFeatureId)
         }
@@ -388,6 +393,31 @@ public class LuaRuleExecutor {
         return .value(toLuaTable(associatedFeatureIds))
     }
     
+    private func luaCreateComplexAttribute(_ ca: ComplexAttribute) -> Value? {
+
+        var args: [Value?] = []
+        args.append(luaCreateItem(ca) ?? "")
+        
+        var attributeBindings: [Value] = []
+        for ab in ca.subAttributeBindingByCode.values {
+            if let attributeBinding = luaCreateAttributeBinding(ab) {
+                attributeBindings.append(attributeBinding)
+            }
+        }
+        args.append(toLuaTable(attributeBindings))
+        
+        return call("CreateComplexAttribute", args)
+    }
+    
+    private func HostGetComplexAttributeTypeInfo(_ args: Arguments) -> SwiftReturnValue {
+        print("DEBUG: HostGetComplexAttributeTypeInfo")
+        let attributeCode = args.string
+        guard let complexAttribute = featureCatalogue.complexAttributeByCode[attributeCode] else {
+            return .nothing
+        }
+        return .value(luaCreateComplexAttribute(complexAttribute))
+    }
+        
     private func HostPortrayalEmit(_ args: Arguments) -> SwiftReturnValue {
         
         let featureId = args.string

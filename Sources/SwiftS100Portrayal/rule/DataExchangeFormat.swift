@@ -11,7 +11,6 @@ struct DataExchangeFormat {
     
     init(_ def: String) {
         var entries: [DataExchangeFormatEntry] = []
-        var entry: DataExchangeFormatEntry? = nil
         
         var part = ""
         var entryKey: String? = nil
