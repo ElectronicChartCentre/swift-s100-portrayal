@@ -13,12 +13,7 @@ struct LuaRuleExecutorTests {
 
     @Test func testPortrayal101AA00DS0003() async throws {
         
-        guard let portrayalCatalogueXMLURL = Bundle.module.url(forResource: "TestResources/101_PC_2.0.0/portrayal_catalogue", withExtension: "xml") else {
-            Issue.record("could not find S-101 portrayal catalogue XML file")
-            return
-        }
-        
-        guard let pc = PortrayalCatalogueParser.parse(portrayalCatalogueXMLURL: portrayalCatalogueXMLURL) else {
+        guard let pc = PortrayalCatalogueParser.parse(bundle: Bundle.module, portrayalCataloguePath: "TestResources/101_PC_2.0.0") else {
             Issue.record("Could not parse S-101 portrayal catalogue")
             return
         }
@@ -52,13 +47,8 @@ struct LuaRuleExecutorTests {
     }
     
     @Test func testPortrayal101AA00DS0016() async throws {
-        guard let portrayalCatalogueXMLURL = Bundle.module.url(forResource: "TestResources/101_PC_2.0.0/portrayal_catalogue", withExtension: "xml") else {
-            Issue.record("could not find S-101 portrayal catalogue XML file")
-            return
-        }
-        
-        guard let pc = PortrayalCatalogueParser.parse(portrayalCatalogueXMLURL: portrayalCatalogueXMLURL) else {
-            Issue.record("Could not parse S-101 portrayal catalogue")
+        guard let pc = PortrayalCatalogueParser.parse(bundle: Bundle.module, portrayalCataloguePath: "TestResources/101_PC_2.0.0") else {
+            Issue.record("Could not find or parse S-101 portrayal catalogue")
             return
         }
 

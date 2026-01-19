@@ -7,6 +7,7 @@ import Foundation
 
 public struct PortrayalCatalogue {
     
+    let bundle: Bundle
     let path: String
     
     let areaFillById: [String: AreaFill]

@@ -30,10 +30,11 @@ class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
         
     }
 
-    static func parse(portrayalCatalogueXMLURL: URL) -> PortrayalCatalogue? {
+    static func parse(bundle: Bundle, portrayalCataloguePath: String) -> PortrayalCatalogue? {
         
-        // use parent directory to find other resources in the portrayal catalogue
-        let portrayalCataloguePath = portrayalCatalogueXMLURL.deletingLastPathComponent().path()
+        guard let portrayalCatalogueXMLURL = bundle.url(forResource: "\(portrayalCataloguePath)/portrayal_catalogue", withExtension: "xml") else {
+            return nil
+        }
         
         do {
             let data = try Data.init(contentsOf: portrayalCatalogueXMLURL)
@@ -44,7 +45,7 @@ class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
             xmlParser.delegate = parser
             xmlParser.parse()
             
-            return PortrayalCatalogue(path: portrayalCataloguePath, areaFillById: parser.areaFillById, ruleFileById: parser.ruleFileById, symbolById: parser.symbolById, lineStyleById: parser.lineStyleById, colorProfileById: parser.colorProfileById, styleSheetById: parser.styleSheetById, viewingGroupById: parser.viewingGroupById)
+            return PortrayalCatalogue(bundle: bundle, path: portrayalCataloguePath, areaFillById: parser.areaFillById, ruleFileById: parser.ruleFileById, symbolById: parser.symbolById, lineStyleById: parser.lineStyleById, colorProfileById: parser.colorProfileById, styleSheetById: parser.styleSheetById, viewingGroupById: parser.viewingGroupById)
 
             
         } catch {

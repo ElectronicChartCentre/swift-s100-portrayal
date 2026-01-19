@@ -37,7 +37,7 @@ public class LuaRuleExecutor {
     private func setPath() {
         
         let fileNameWithoutSuffix = "\(portrayalCatalogue.path)/Rules/main"
-        guard let url = Bundle.module.url(forResource: fileNameWithoutSuffix, withExtension: "lua") else {
+        guard let url = portrayalCatalogue.bundle.url(forResource: fileNameWithoutSuffix, withExtension: "lua") else {
             print("DEBUG: could not find \(fileNameWithoutSuffix).lua")
             return
         }
@@ -55,7 +55,7 @@ public class LuaRuleExecutor {
         do {
             
             let fileNameWithoutSuffix = "\(portrayalCatalogue.path)/Rules/main"
-            guard let url = Bundle.module.url(forResource: fileNameWithoutSuffix, withExtension: "lua") else {
+            guard let url = portrayalCatalogue.bundle.url(forResource: fileNameWithoutSuffix, withExtension: "lua") else {
                 print("DEBUG: could not find \(fileNameWithoutSuffix).lua")
                 return
             }
