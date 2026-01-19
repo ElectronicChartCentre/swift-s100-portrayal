@@ -82,12 +82,14 @@ public class LuaRuleExecutor {
         lua.registerFunction(.init(name: "HostGetInformationAssociationTypeCodes", fn: HostGetInformationAssociationTypeCodes(_:)))
         lua.registerFunction(.init(name: "HostGetFeatureAssociationTypeCodes", fn: HostGetFeatureAssociationTypeCodes(_:)))
         lua.registerFunction(.init(name: "HostGetFeatureTypeInfo", parameters: [String.arg], fn: HostGetFeatureTypeInfo(_:)))
+        lua.registerFunction(.init(name: "HostGetSimpleAttributeTypeInfo", parameters: [String.arg], fn: HostGetSimpleAttributeTypeInfo(_:)))
         lua.registerFunction(.init(name: "HostFeatureGetSpatialAssociations", parameters: [String.arg], fn: HostFeatureGetSpatialAssociations(_:)))
         lua.registerFunction(.init(name: "HostFeatureGetAssociatedInformationIDs", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetAssociatedInformationIDs(_:)))
         lua.registerFunction(.init(name: "HostGetComplexAttributeTypeInfo", parameters: [String.arg], fn: HostGetComplexAttributeTypeInfo(_:)))
         lua.registerFunction(.init(name: "HostFeatureGetSimpleAttribute", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetSimpleAttribute(_:)))
         lua.registerFunction(.init(name: "HostFeatureGetComplexAttributeCount", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetComplexAttributeCount(_:)))
         lua.registerFunction(.init(name: "HostInformationTypeGetSimpleAttribute", parameters: [String.arg, String.arg, String.arg], fn: HostInformationTypeGetSimpleAttribute(_:)))
+        lua.registerFunction(.init(name: "HostGetSpatial", parameters: [String.arg], fn: HostGetSpatial(_:)))
         lua.registerFunction(.init(name: "HostPortrayalEmit", parameters: [String.arg, String.arg, String.arg], fn: HostPortrayalEmit(_:)))
 
     }
@@ -302,7 +304,12 @@ public class LuaRuleExecutor {
         return call("CreateObjectType", args)
     }
     
+    var _luaCreateFeatureType: [String: Value] = [:]
+    
     private func luaCreateFeatureType(_ featureType: FeatureType) -> Value? {
+        if let ft = _luaCreateFeatureType[featureType.code] {
+            return ft
+        }
         var args: [Value?] = []
         args.append(luaCreateObjectType(featureType) ?? "")
         args.append(featureType.featureUseType)
@@ -310,14 +317,16 @@ public class LuaRuleExecutor {
         args.append(toLuaTable([])) // TODO: featureBindings
         args.append(featureType.superType)
         args.append(toLuaTable(featureType.subType))
-        return call("CreateFeatureType", args)
+        if let ft = call("CreateFeatureType", args) {
+            _luaCreateFeatureType[featureType.code] = ft
+            return ft
+        }
+        return nil
     }
     
     private func HostGetFeatureTypeInfo(_ args: Arguments) -> SwiftReturnValue {
         print("DEBUG: HostGetFeatureTypeInfo")
         let code = args.string
-        
-        // TODO: a cache for this?
         
         guard let featureType = featureCatalogue.featureTypeByCode[code] else {
             return .nothing
@@ -330,13 +339,86 @@ public class LuaRuleExecutor {
         return .nothing
     }
     
+    private func luaCreateAttributeConstraints() -> Value? {
+        // TODO: implement
+        let args: [Value?] = []
+        return call("CreateAttributeConstraints", args)
+    }
+
+    private func luaCreateListedValue(_ lv: ListedValue) -> Value? {
+        var args: [Value?] = []
+        args.append(lv.label)
+        args.append(lv.definition)
+        args.append(lv.code)
+        args.append(lv.remarks)
+        args.append(toLuaTable(lv.alias))
+        return call("CreateListedValue", args)
+    }
+    
+    var _luaCreateSimpleAttribute: [String: Value] = [:]
+    
+    private func luaCreateSimpleAttribute(_ attribute: SimpleAttribute) -> Value? {
+        if let ft = _luaCreateSimpleAttribute[attribute.code] {
+            return ft
+        }
+        var args: [Value?] = []
+        args.append(luaCreateItem(attribute))
+        args.append(attribute.valueType)
+        args.append(attribute.uom?.name)
+        args.append(attribute.quantitySpecification)
+        args.append(luaCreateAttributeConstraints())
+        
+        var luaListedValues: [Value] = []
+        for listedValue in attribute.listedValues {
+            if let lv = luaCreateListedValue(listedValue) {
+                luaListedValues.append(lv)
+            }
+        }
+        args.append(toLuaTable(luaListedValues))
+
+        if let a = call("CreateSimpleAttribute", args) {
+            _luaCreateFeatureType[attribute.code] = a
+            return a
+        }
+        return nil
+    }
+
+    
+    private func HostGetSimpleAttributeTypeInfo(_ args: Arguments) -> SwiftReturnValue {
+        print("DEBUG: HostGetSimpleAttributeTypeInfo")
+        let code = args.string
+        
+        guard let attribute = featureCatalogue.simpleAttributeByCode[code] else {
+            return .nothing
+        }
+        
+        if let ft = luaCreateSimpleAttribute(attribute) {
+            return .value(ft)
+        }
+        
+        return .nothing
+    }
+    
     private func luaCreateSpatialAssociation(_ spas: SPAS) -> Value? {
+        return luaCreateSpatialAssociation(spas.referencedRecordIdentifier, spas.ornt, smin: spas.smin, smax: spas.smax)
+    }
+    
+    private func luaCreateSpatialAssociation(_ cuco: CUCO) -> Value? {
+        return luaCreateSpatialAssociation(cuco.referencedRecordIdentifier, cuco.ornt, smin: nil, smax: nil)
+    }
+    
+    private func luaCreateSpatialAssociation(_ rias: RIAS) -> Value? {
+        return luaCreateSpatialAssociation(rias.referencedRecordIdentifier, rias.ornt, smin: nil, smax: nil)
+    }
+    
+    private func luaCreateSpatialAssociation(_ referencedRecordIdentifier: RecordIdentifier, _ ornt: Int, smin: Int?, smax: Int?) -> Value? {
+
         
         guard let dsf = dsf else {
             return nil
         }
         
-        guard let record = dsf.record(forIdentifier: spas.referencedRecordIdentifier) else {
+        guard let record = dsf.record(forIdentifier: referencedRecordIdentifier) else {
             return nil
         }
         
@@ -346,7 +428,7 @@ public class LuaRuleExecutor {
         }
         
         var orientation: String = "Unknown"
-        switch spas.ornt {
+        switch ornt {
         case SPAS.orntForvard:
             orientation = "Forward"
         case SPAS.orntReverse:
@@ -357,7 +439,7 @@ public class LuaRuleExecutor {
         
         let recordId = LuaRuleExecutor.createRecordId(dsf: dsf, record: record)
         
-        let args: [String] = [spatialType, recordId, orientation, spas.smin.description, spas.smax.description]
+        let args: [Value?] = [spatialType, recordId, orientation, smin, smax]
         
         return call("CreateSpatialAssociation", args)
     }
@@ -429,6 +511,20 @@ public class LuaRuleExecutor {
         return .value(luaCreateComplexAttribute(complexAttribute))
     }
     
+    private var _luaGetUnknownAttributeString: Value? = nil
+    
+    private func luaGetUnknownAttributeString() -> Value? {
+        if let l = _luaGetUnknownAttributeString {
+            return l
+        } else {
+            if let l = call("GetUnknownAttributeString", []) {
+                _luaGetUnknownAttributeString = l
+                return l
+            }
+        }
+        return nil
+    }
+    
     private func HostFeatureGetSimpleAttribute(_ args: Arguments) -> SwiftReturnValue {
         print("DEBUG: HostFeatureGetSimpleAttribute")
         let featureId = args.string
@@ -445,10 +541,13 @@ public class LuaRuleExecutor {
         
         let attributePath = AttributePath(definition: path)
 
-        var values: [String] = []
+        var values: [Value] = []
         for value in attributePath.resolveAttributePath(dsf: dsf, record: feature, atcd: attributeCode) {
-            // TODO: GetUnknownAttributeString?
-            values.append(value)
+            if value != "" {
+                values.append(value)
+            } else if let uk = luaGetUnknownAttributeString() {
+                values.append(uk)
+            }
         }
         
         return .value(toLuaTable(values))
@@ -493,13 +592,144 @@ public class LuaRuleExecutor {
         
         let attributePath = AttributePath(definition: path)
 
-        var values: [String] = []
+        var values: [Value] = []
         for value in attributePath.resolveAttributePath(dsf: dsf, record: record, atcd: attributeCode) {
-            // TODO: GetUnknownAttributeString?
-            values.append(value)
+            if value != "" {
+                values.append(value)
+            } else if let uk = luaGetUnknownAttributeString() {
+                values.append(uk)
+            }
+        }
+
+        return .value(toLuaTable(values))
+    }
+    
+    private func luaCreatePoint(xcoo: Int, ycoo: Int, zcoo: Int?) -> Value? {
+        var args: [Value?] = []
+        args.append(String(xcoo))
+        args.append(String(ycoo))
+        if let zcoo = zcoo {
+            args.append(String(zcoo))
+        } else {
+            args.append(nil)
+        }
+        return call("CreatePoint", args)
+    }
+    
+    private func luaCreateSurface(ext: Value?, ints: [Value]) -> Value? {
+        var args: [Value?] = []
+        args.append(ext)
+        if ints.isEmpty {
+            args.append(nil)
+        } else {
+            args.append(toLuaTable(ints))
+        }
+
+        return call("CreateSurface", args)
+    }
+    
+    private func luaCreateCompositeCurve(_ args: [Value]) -> Value? {
+        return call("CreateCompositeCurve", args)
+    }
+    
+    private func luaCreateCurveSegment(_ controlPoints: [Value], _ interpolation: Value?) -> Value? {
+        var args: [Value?] = []
+        args.append(toLuaTable(controlPoints))
+        args.append(interpolation)
+        return call("CreateCurveSegment", args)
+    }
+    
+    private func luaCreateCurve(startPoint: Value?, endPoint: Value?, segments: [Value]) -> Value? {
+        var args: [Value?] = []
+        args.append(startPoint)
+        args.append(endPoint)
+        args.append(toLuaTable(segments))
+        return call("CreateCurve", args)
+    }
+    
+    private func HostGetSpatial(_ args: Arguments) -> SwiftReturnValue {
+        print("DEBUG: HostGetSpatial")
+        let spatialId = args.string
+        
+        guard let dsf = dsf else {
+            return .nothing
         }
         
-        return .value(toLuaTable(values))
+        guard let recordIdentifier = LuaRuleExecutor.createRecordIdentifier(recordId: spatialId) else {
+            return .nothing
+        }
+        
+        guard let record = dsf.record(forIdentifier: recordIdentifier) as? GeometryRecord else {
+            return .nothing
+        }
+        
+        print("DEBUG: HostGetSpatial.. " + record.spatialType())
+        
+        // TODO: implement
+        if let pointRecord = record as? PointRecord {
+            if let c2it = pointRecord.c2it() {
+                return .value(luaCreatePoint(xcoo: c2it.xcoo, ycoo: c2it.ycoo, zcoo: nil))
+            } else if let c3it = pointRecord.c3it() {
+                return .value(luaCreatePoint(xcoo: c3it.xcoo, ycoo: c3it.ycoo, zcoo: c3it.zcoo))
+            } else {
+                return .nothing
+            }
+        } else if let multiPointRecord = record as? MultiPointRecord {
+            var points: [Value] = []
+            for c2il in multiPointRecord.c2ils() {
+                if let p = luaCreatePoint(xcoo: c2il.xcoo, ycoo: c2il.ycoo, zcoo: nil) {
+                    points.append(p)
+                }
+            }
+            for c3il in multiPointRecord.c3ils() {
+                for c3it in c3il.c3its {
+                    if let p = luaCreatePoint(xcoo: c3it.xcoo, ycoo: c3it.ycoo, zcoo: c3it.zcoo) {
+                        points.append(p)
+                    }
+                }
+            }
+            return .value(toLuaTable(points))
+        } else if let surfaceRecord = record as? SurfaceRecord {
+            var exteriorRing: Value? = nil
+            var interiorRings: [Value] = []
+            for rias in surfaceRecord.riass() {
+                if exteriorRing == nil {
+                    exteriorRing = luaCreateSpatialAssociation(rias)
+                } else if let r = luaCreateSpatialAssociation(rias) {
+                    interiorRings.append(r)
+                }
+            }
+            return .value(luaCreateSurface(ext: exteriorRing, ints: interiorRings))
+        } else if let curveRecord = record as? CurveRecord {
+            var segments: [Value] = []
+            var allPoints: [Value] = []
+            for segment in curveRecord.segments() {
+                var controlPoints: [any Value] = []
+                for c2il in segment.c2ils() {
+                    if let controlPoint = luaCreatePoint(xcoo: c2il.xcoo, ycoo: c2il.ycoo, zcoo: nil) {
+                        controlPoints.append(controlPoint)
+                        allPoints.append(controlPoint)
+                    }
+                }
+                if let segment = luaCreateCurveSegment(controlPoints, segment.segh.intp) {
+                    segments.append(segment)
+                }
+            }
+            let startPoint = allPoints.first
+            let endPoint = allPoints.last
+            return .value(luaCreateCurve(startPoint: startPoint, endPoint: endPoint, segments: segments))
+        } else if let compositeCurveRecord = record as? CompositeCurveRecord {
+            var associations: [Value] = []
+            for cuco in compositeCurveRecord.cucos() {
+                if let association = luaCreateSpatialAssociation(cuco) {
+                    associations.append(association)
+                }
+            }
+            return .value(luaCreateCompositeCurve(associations))
+        } else {
+            print("ERROR: HostGetSpatial invalid geometry record type. \(record)")
+            return .nothing
+        }
     }
         
     private func HostPortrayalEmit(_ args: Arguments) -> SwiftReturnValue {

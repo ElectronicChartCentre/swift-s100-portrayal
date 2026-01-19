@@ -46,10 +46,6 @@ struct AttributePath {
             }
         }
         
-        if let feature = record as? FeatureTypeRecord {
-            print("DEBUG: atvls: \(atvls). ftcd: \(feature.frid.ftcd), atcd: \(atcd). \(definition)")
-        }
-        
         return atvls
     }
     
