@@ -10,7 +10,13 @@ import Foundation
 struct PortrayalCatalogueParserTests {
 
     @Test func parseS101PortrayalCatalogue() async throws {
-        guard let pc = PortrayalCatalogueParser.parse(name: "101_PC_2.0.0") else {
+        
+        guard let portrayalCatalogueXMLURL = Bundle.module.url(forResource: "TestResources/101_PC_2.0.0/portrayal_catalogue", withExtension: "xml") else {
+            Issue.record("could not find S-101 portrayal catalogue XML file")
+            return
+        }
+        
+        guard let pc = PortrayalCatalogueParser.parse(portrayalCatalogueXMLURL: portrayalCatalogueXMLURL) else {
             Issue.record("Could not parse S-101 portrayal catalogue")
             return
         }
@@ -26,7 +32,13 @@ struct PortrayalCatalogueParserTests {
     }
     
     @Test func parseS124PortrayalCatalogue() async throws {
-        guard let pc = PortrayalCatalogueParser.parse(name: "124_PC_2.0.0") else {
+        
+        guard let portrayalCatalogueXMLURL = Bundle.module.url(forResource: "TestResources/124_PC_2.0.0/portrayal_catalogue", withExtension: "xml") else {
+            Issue.record("could not find S-124 portrayal catalogue XML file")
+            return
+        }
+        
+        guard let pc = PortrayalCatalogueParser.parse(portrayalCatalogueXMLURL: portrayalCatalogueXMLURL) else {
             Issue.record("Could not parse S-124 portrayal catalogue")
             return
         }

@@ -12,12 +12,23 @@ import Foundation
 struct LuaRuleExecutorTests {
 
     @Test func testPortrayal101AA00DS0003() async throws {
-        guard let pc = PortrayalCatalogueParser.parse(name: "101_PC_2.0.0") else {
+        
+        guard let portrayalCatalogueXMLURL = Bundle.module.url(forResource: "TestResources/101_PC_2.0.0/portrayal_catalogue", withExtension: "xml") else {
+            Issue.record("could not find S-101 portrayal catalogue XML file")
+            return
+        }
+        
+        guard let pc = PortrayalCatalogueParser.parse(portrayalCatalogueXMLURL: portrayalCatalogueXMLURL) else {
             Issue.record("Could not parse S-101 portrayal catalogue")
             return
         }
         
-        guard let fc = FeatureCatalogues.defaultVersion(prodSpecNr: 101) else {
+        guard let featureCatalogueXMLURL = Bundle.module.url(forResource: "TestResources/101_Feature_Catalogue_2.0.0", withExtension: "xml") else {
+            Issue.record("could not find S-101 portrayal catalogue XML file")
+            return
+        }
+        
+        guard let fc = FeatureCatalogueParser.parse(url: featureCatalogueXMLURL) else {
             Issue.record("Could not parse S-101 feature catalogue")
             return
         }
@@ -41,16 +52,26 @@ struct LuaRuleExecutorTests {
     }
     
     @Test func testPortrayal101AA00DS0016() async throws {
-        guard let pc = PortrayalCatalogueParser.parse(name: "101_PC_2.0.0") else {
+        guard let portrayalCatalogueXMLURL = Bundle.module.url(forResource: "TestResources/101_PC_2.0.0/portrayal_catalogue", withExtension: "xml") else {
+            Issue.record("could not find S-101 portrayal catalogue XML file")
+            return
+        }
+        
+        guard let pc = PortrayalCatalogueParser.parse(portrayalCatalogueXMLURL: portrayalCatalogueXMLURL) else {
             Issue.record("Could not parse S-101 portrayal catalogue")
             return
         }
-        
-        guard let fc = FeatureCatalogues.defaultVersion(prodSpecNr: 101) else {
-            Issue.record("Could not parse S-101 feature catalogue")
+
+        guard let featureCatalogueXMLURL = Bundle.module.url(forResource: "TestResources/101_Feature_Catalogue_2.0.0", withExtension: "xml") else {
+            Issue.record("could not find S-101 portrayal catalogue XML file")
             return
         }
         
+        guard let fc = FeatureCatalogueParser.parse(url: featureCatalogueXMLURL) else {
+            Issue.record("Could not parse S-101 feature catalogue")
+            return
+        }
+
         // from https://github.com/iho-ohi/S-101-Test-Datasets/blob/main/S-101_Test_DataSets/cells/101AA00DS0003/9/101AA00DS0016.000
         guard let testDataURL = Bundle.module.url(forResource: "TestResources/101AA00DS0016", withExtension: "000") else {
             Issue.record("Could not load test data")

@@ -30,18 +30,13 @@ class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
         
     }
 
-    static func parse(name: String) -> PortrayalCatalogue? {
+    static func parse(portrayalCatalogueXMLURL: URL) -> PortrayalCatalogue? {
         
-        let portrayalCataloguePath = "Resources/\(name)"
-        
-        let path = "\(portrayalCataloguePath)/portrayal_catalogue"
-        guard let url = Bundle.module.url(forResource: path, withExtension: "xml") else {
-            print("DEBUG: could not find file. \(path).xml")
-            return nil
-        }
+        // use parent directory to find other resources in the portrayal catalogue
+        let portrayalCataloguePath = portrayalCatalogueXMLURL.deletingLastPathComponent().path()
         
         do {
-            let data = try Data.init(contentsOf: url)
+            let data = try Data.init(contentsOf: portrayalCatalogueXMLURL)
             
             let parser = PortrayalCatalogueParser()
             
