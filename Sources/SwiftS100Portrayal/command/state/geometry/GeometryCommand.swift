@@ -5,6 +5,7 @@
 
 import Foundation
 
-class DrawingCommand {
-    
+protocol GeometryCommand: StateCommand {
+    // TODO: implement
+
 }

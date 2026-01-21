@@ -7,34 +7,6 @@ import Foundation
 
 struct RuleFile {
     
-    /*
-     <ruleFile id="Coastline">
-        <description>
-           <name>Coastline</name>
-           <description>Rules for feature type Coastline</description>
-           <language>eng</language>
-        </description>
-        <fileName>Coastline.lua</fileName>
-        <fileType>Rule</fileType>
-        <fileFormat>LUA</fileFormat>
-        <ruleType>SubTemplate</ruleType>
-     </ruleFile>
-     */
-    
-    /*
-     <ruleFile id="NavwarnAreaAffected">
-         <description>
-             <name>NavwarnAreaAffected</name>
-             <description>NavwarnAreaAffected</description>
-             <language>eng</language>
-         </description>
-         <fileName>NavwarnAreaAffected.xsl</fileName>
-         <fileType>Rule</fileType>
-         <fileFormat>XSLT</fileFormat>
-         <ruleType>SubTemplate</ruleType>
-     </ruleFile>
-     */
-    
     let id: String
     let description: Description
     let fileName: String

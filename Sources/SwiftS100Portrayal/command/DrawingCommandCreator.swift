@@ -1,0 +1,52 @@
+//
+//  File.swift
+//  SwiftS100Portrayal
+//
+
+import Foundation
+
+struct DrawingCommandCreator: Sendable {
+    
+    static let shared = DrawingCommandCreator()
+    
+    private let registry: [String: @Sendable (PortrayalState, [String]) -> DrawingCommand?]
+    
+    private init() {
+        var registry: [String: @Sendable (PortrayalState, [String]) -> DrawingCommand?] = [:]
+        
+        // visibility state commands
+        registry["ViewingGroup"] = ViewingGroupCommand.handle(state:args:)
+        registry["DisplayPlane"] = DisplayPlane.handle(state:args:)
+        registry["DrawingPriority"] = DrawingPriorityCommand.handle(state:args:)
+
+        // drawing commands
+        registry["LineInstruction"] = LineInstruction.init(state:args:)
+        registry["ColorFill"] = ColorFill.init(state:args:)
+        
+        // null instruction
+        registry["NullInstruction"] = NullInstruction.init(state:args:)
+        
+        self.registry = registry
+
+    }
+    
+    func create(def: DataExchangeFormat) -> [DrawingCommand] {
+        var drawingCommands = [DrawingCommand]()
+        
+        let state = PortrayalState()
+        for entry in def.entries {
+            // dictionary instead of switch for faster lookup
+            if let function = registry[entry.key] {
+                if let drawingCommand = function(state, entry.arguments) {
+                    drawingCommands.append(drawingCommand)
+                }
+            } else {
+                print("TODO: unknown instruction: \(entry.key)")
+            }
+        }
+        
+        return drawingCommands
+    }
+    
+    
+}

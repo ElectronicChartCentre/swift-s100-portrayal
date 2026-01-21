@@ -7,20 +7,6 @@ import Foundation
 
 struct LineStyle {
     
-    /*
-     <lineStyle id="RCRTCL13">
-        <description>
-           <name>RCRTCL13</name>
-           <description>regulated two-way recommended route centreline, based on fixed-marks</description>
-           <language>eng</language>
-        </description>
-        <fileName>RCRTCL13.xml</fileName>
-        <fileType>LineStyle</fileType>
-        <fileFormat>XML</fileFormat>
-     </lineStyle>
-
-     */
-    
     let id: String
     let description: Description
     let fileName: String

@@ -24,6 +24,11 @@ struct PortrayalCatalogueParserTests {
         #expect(pc.styleSheetById.count == 3)
         #expect(pc.viewingGroupById.count == 133)
 
+        #expect(pc.colorPaletteByName.count == 3)
+        for palette in pc.colorPaletteByName.values {
+            #expect(palette.itemByToken.count == 67)
+        }
+        
     }
     
     @Test func parseS124PortrayalCatalogue() async throws {
@@ -40,6 +45,11 @@ struct PortrayalCatalogueParserTests {
         #expect(pc.colorProfileById.count == 1)
         #expect(pc.styleSheetById.count == 3)
         #expect(pc.viewingGroupById.count == 3)
+        
+        #expect(pc.colorPaletteByName.count == 3)
+        for palette in pc.colorPaletteByName.values {
+            #expect(palette.itemByToken.count == 69)
+        }
 
     }
 

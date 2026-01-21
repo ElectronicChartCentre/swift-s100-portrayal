@@ -7,19 +7,6 @@ import Foundation
 
 struct StyleSheet {
     
-    /*
-     <styleSheet id="duskSvgStyle">
-        <description>
-           <name>Dusk</name>
-           <description>CSS file for dusk palette</description>
-           <language>eng</language>
-        </description>
-        <fileName>duskSvgStyle.css</fileName>
-        <fileType>StyleSheet</fileType>
-        <fileFormat>XML</fileFormat> <!-- fileFormat will need to be updated when Part 9 is updated to include CSS file format. -->
-
-     */
-    
     let id: String
     let description: Description
     let fileName: String

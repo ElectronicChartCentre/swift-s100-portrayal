@@ -12,6 +12,9 @@ import FoundationXML
 
 class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
     
+    private let bundle: Bundle
+    private let portrayalCataloguePath: String
+    
     private var currentKV: [String: String] = [:]
     private var currentElementValue = ""
     private var currentDescription: Description?
@@ -26,8 +29,9 @@ class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
     private var styleSheetById: [String: StyleSheet] = [:]
     private var viewingGroupById: [String: ViewingGroup] = [:]
     
-    private override init() {
-        
+    private init(bundle: Bundle, portrayalCataloguePath: String) {
+        self.bundle = bundle
+        self.portrayalCataloguePath = portrayalCataloguePath
     }
 
     static func parse(bundle: Bundle, portrayalCataloguePath: String) -> PortrayalCatalogue? {
@@ -39,15 +43,20 @@ class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
         do {
             let data = try Data.init(contentsOf: portrayalCatalogueXMLURL)
             
-            let parser = PortrayalCatalogueParser()
+            let parser = PortrayalCatalogueParser(bundle: bundle, portrayalCataloguePath: portrayalCataloguePath)
             
             let xmlParser = XMLParser(data: data)
             xmlParser.delegate = parser
             xmlParser.parse()
             
-            return PortrayalCatalogue(bundle: bundle, path: portrayalCataloguePath, areaFillById: parser.areaFillById, ruleFileById: parser.ruleFileById, symbolById: parser.symbolById, lineStyleById: parser.lineStyleById, colorProfileById: parser.colorProfileById, styleSheetById: parser.styleSheetById, viewingGroupById: parser.viewingGroupById)
-
+            var colorPaletteByName: [String: ColorPalette] = [:]
+            for colorProfile in parser.colorProfileById.values {
+                if let aColorPaletteByName = ColorProfileParser.parse(bundle: bundle, portrayalCataloguePath: portrayalCataloguePath, colorProfile: colorProfile) {
+                    colorPaletteByName.merge(aColorPaletteByName, uniquingKeysWith: { (_, new) in new })
+                }
+            }
             
+            return PortrayalCatalogue(bundle: bundle, path: portrayalCataloguePath, areaFillById: parser.areaFillById, ruleFileById: parser.ruleFileById, symbolById: parser.symbolById, lineStyleById: parser.lineStyleById, colorProfileById: parser.colorProfileById, styleSheetById: parser.styleSheetById, viewingGroupById: parser.viewingGroupById, colorPaletteByName: colorPaletteByName)
         } catch {
             return nil
         }

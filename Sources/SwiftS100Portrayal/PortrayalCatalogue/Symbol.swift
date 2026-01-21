@@ -7,19 +7,6 @@ import Foundation
 
 struct Symbol {
     
-    /*
-     <symbol id="WATFAL01">
-        <description>
-           <name>WATFAL01</name>
-           <description>Waterfall (conspicuous)</description>
-           <language>eng</language>
-        </description>
-        <fileName>WATFAL01.svg</fileName>
-        <fileType>Symbol</fileType>
-        <fileFormat>SVG</fileFormat>
-     </symbol>
-     */
-    
     let id: String
     let description: Description
     let fileName: String

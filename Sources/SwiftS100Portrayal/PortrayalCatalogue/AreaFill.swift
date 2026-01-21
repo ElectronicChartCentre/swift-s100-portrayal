@@ -7,20 +7,6 @@ import Foundation
 
 struct AreaFill {
     
-    /*
-     <areaFill id="DQUALB01">
-        <description>
-           <name>DQUALB01</name>
-           <description>pattern of symbols for a chart with 50m accuracy from standard survey based on lines of continuous soundings</description>
-           <language>eng</language>
-        </description>
-        <fileName>DQUALB01.xml</fileName>
-        <fileType>AreaFill</fileType>
-        <fileFormat>XML</fileFormat>
-     </areaFill>
-
-     */
-    
     let id: String
     let description: Description
     let fileName: String

@@ -4,7 +4,7 @@
 import PackageDescription
 
 let package = Package(
-    name: "SwiftS100Portrayal",
+    name: "swift-s100-portrayal",
     platforms: [.iOS(.v17), .macOS(.v14)],
     products: [
         .library(
@@ -16,7 +16,8 @@ let package = Package(
         //.package(url: "https://github.com/ElectronicChartCentre/swift-s101", from: "1.0.0"),
         .package(path: "../swift-s101"),
         .package(path: "../swift-s100-feature-catalogue"),
-        .package(url: "https://github.com/SwiftyLua/SwiftyLua", from: "0.1.0")
+        //.package(url: "https://github.com/SwiftyLua/SwiftyLua", from: "0.1.0")
+        .package(path: "../ext/SwiftyLua"),
     ],
     targets: [
         .target(
@@ -26,9 +27,6 @@ let package = Package(
                 .product(name: "SwiftS100FeatureCatalogue", package: "swift-s100-feature-catalogue"),
                 .product(name: "SwiftyLua", package: "SwiftyLua")
             ],
-            resources: [
-                .copy("Resources/")
-            ]
         ),
         .testTarget(
             name: "SwiftS100PortrayalTests",

@@ -17,6 +17,7 @@ public class LuaRuleExecutor {
     
     private var dsf: DataSetFile?
     private var featureById: [String: FeatureTypeRecord] = [:]
+    private var drawingCommands: [DrawingCommand] = []
     
     private let debug: Bool = true
     
@@ -117,9 +118,13 @@ public class LuaRuleExecutor {
 
     func portrayal(features: [FeatureTypeRecord]) -> [DrawingCommand] {
         
+        drawingCommands.removeAll()
+        
         guard let dsf = dsf else {
             return []
         }
+        
+        // TODO: cache drawing commands pr feature id and observed context parameter(s)
         
         var featureIdsToPortray: Set<String> = []
         for feature in features {
@@ -129,7 +134,9 @@ public class LuaRuleExecutor {
         
         let _ = call("PortrayalMain", [toLuaTable(featureIdsToPortray.sorted())])
         
-        return []
+        // TODO: sort the drawing commands here?
+        
+        return drawingCommands
     }
     
     private static func createRecordId(dsf: DataSetFile, record: Record) -> String {
@@ -744,7 +751,11 @@ public class LuaRuleExecutor {
         }
         
         print("DEBUG: HostPortrayalEmit. featureId: \(featureId)(\(ftcd)), drawing instructions: \(drawingInstructions), observed parameters:  \(observedParameters)")
-        // TODO: implement
+        
+        let def = DataExchangeFormat(drawingInstructions)
+        let drawingCommands = DrawingCommandCreator.shared.create(def: def)
+        self.drawingCommands.append(contentsOf: drawingCommands)
+        
         return .value(true as Value)
     }
     

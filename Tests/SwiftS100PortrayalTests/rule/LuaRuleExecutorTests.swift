@@ -43,7 +43,7 @@ struct LuaRuleExecutorTests {
         let lre = LuaRuleExecutor(portrayalCatalogue: pc, featureCatalogue: fc)
         lre.setUp(dsf: dsf)
         let drawingCommands = lre.portrayal(features: dsf.featureTypeRecords())
-        // #expect(!drawingCommands.isEmpty)
+        #expect(!drawingCommands.isEmpty)
     }
     
     @Test func testPortrayal101AA00DS0016() async throws {
@@ -77,7 +77,7 @@ struct LuaRuleExecutorTests {
         let lre = LuaRuleExecutor(portrayalCatalogue: pc, featureCatalogue: fc)
         lre.setUp(dsf: dsf)
         let drawingCommands = lre.portrayal(features: dsf.featureTypeRecords())
-        // #expect(!drawingCommands.isEmpty)
+        #expect(!drawingCommands.isEmpty)
     }
 
 }

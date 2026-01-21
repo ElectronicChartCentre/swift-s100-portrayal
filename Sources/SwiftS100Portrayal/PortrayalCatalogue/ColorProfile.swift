@@ -7,20 +7,6 @@ import Foundation
 
 struct ColorProfile {
     
-    /*
-     <colorProfile id="1">
-        <description>
-           <name>Color Profile</name>
-           <description>Color profile with day, dusk, and night color palettes</description>
-           <language>eng</language>
-        </description>
-        <fileName>colorProfile.xml</fileName>
-        <fileType>ColorProfile</fileType>
-        <fileFormat>XML</fileFormat>
-     </colorProfile>
-
-     */
-    
     let id: String
     let description: Description
     let fileName: String
@@ -38,6 +24,10 @@ struct ColorProfile {
             return nil
         }
         return ColorProfile(id: id, description: description, fileName: fileName, fileType: fileType, fileFormat: fileFormat)
+    }
+    
+    func fileNameWithoutSuffix() -> String {
+        return String(fileName.split(separator: ".")[0])
     }
 
 }

@@ -7,15 +7,6 @@ import Foundation
 
 struct Description {
     
-    /*
-     <description>
-        <name>Coastline</name>
-        <description>Rules for feature type Coastline</description>
-        <language>eng</language>
-     </description>
-
-     */
-    
     let name: String
     let description: String
     let language: String
