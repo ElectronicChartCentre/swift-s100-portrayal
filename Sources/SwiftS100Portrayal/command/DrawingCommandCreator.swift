@@ -20,6 +20,7 @@ struct DrawingCommandCreator: Sendable {
         registry["DrawingPriority"] = DrawingPriorityCommand.handle(state:args:)
 
         // line style
+        registry["Dash"] = DashCommand.handle(state:args:)
         registry["LineStyle"] = LineStyleCommand.handle(state:args:)
 
         // drawing commands

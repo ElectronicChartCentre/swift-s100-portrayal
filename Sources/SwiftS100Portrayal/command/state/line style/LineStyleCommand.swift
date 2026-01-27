@@ -29,7 +29,8 @@ struct LineStyleCommand: LineStyleStateCommand {
         // TODO: handle with more parameters
         
         let pen = Pen(width: width, color: token)
-        let lineStyle = LineStyle(name: name, intervalLength: intervalLength, pen: pen, dashs: [], symbols: [])
+        let dashs = state.lineStyleState.consumeDashs()
+        let lineStyle = LineStyle(name: name, intervalLength: intervalLength, pen: pen, dashs: dashs, symbols: [])
 
         state.lineStyles.append(lineStyle)
         
