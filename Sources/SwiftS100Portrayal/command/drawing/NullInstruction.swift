@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct NullInstruction: DrawingCommand {
+public struct NullInstruction: DrawingCommand {
     
     init(state: PortrayalState, args: [String]) {
         

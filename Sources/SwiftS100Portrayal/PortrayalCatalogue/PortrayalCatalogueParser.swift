@@ -24,7 +24,7 @@ class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
     private var areaFillById: [String: AreaFill] = [:]
     private var ruleFileById: [String: RuleFile] = [:]
     private var symbolById: [String: Symbol] = [:]
-    private var lineStyleById: [String: LineStyle] = [:]
+    private var lineStyleById: [String: LineStyleFile] = [:]
     private var colorProfileById: [String: ColorProfile] = [:]
     private var styleSheetById: [String: StyleSheet] = [:]
     private var viewingGroupById: [String: ViewingGroup] = [:]
@@ -56,7 +56,14 @@ class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
                 }
             }
             
-            return PortrayalCatalogue(bundle: bundle, path: portrayalCataloguePath, areaFillById: parser.areaFillById, ruleFileById: parser.ruleFileById, symbolById: parser.symbolById, lineStyleById: parser.lineStyleById, colorProfileById: parser.colorProfileById, styleSheetById: parser.styleSheetById, viewingGroupById: parser.viewingGroupById, colorPaletteByName: colorPaletteByName)
+            var lineStyleByName: [String: LineStyle] = [:]
+            for lineStyleFile in parser.lineStyleById.values {
+                if let lineStyle = LineStyleParser.parse(bundle: bundle, portrayalCataloguePath: portrayalCataloguePath, lineStyleFile: lineStyleFile) {
+                    lineStyleByName[lineStyle.name] = lineStyle
+                }
+            }
+            
+            return PortrayalCatalogue(bundle: bundle, path: portrayalCataloguePath, areaFillById: parser.areaFillById, ruleFileById: parser.ruleFileById, symbolById: parser.symbolById, lineStyleByName: lineStyleByName, colorProfileById: parser.colorProfileById, styleSheetById: parser.styleSheetById, viewingGroupById: parser.viewingGroupById, colorPaletteByName: colorPaletteByName)
         } catch {
             return nil
         }
@@ -117,7 +124,7 @@ class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
                         print("DEBUG: could not parse \(elementName) from \(currentKV)")
                     }
                 case "lineStyle":
-                    if let lineStyle = LineStyle.create(currentKV, id: id, description: description) {
+                    if let lineStyle = LineStyleFile.create(currentKV, id: id, description: description) {
                         lineStyleById[lineStyle.id] = lineStyle
                     } else {
                         print("DEBUG: could not parse \(elementName) from \(currentKV)")

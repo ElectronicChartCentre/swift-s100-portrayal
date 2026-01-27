@@ -5,7 +5,8 @@
 
 import Foundation
 
-struct LineInstructionUnsuppressed: DrawingCommand {
+public struct LineInstructionUnsuppressed: DrawingCommand {
+    
     // TODO: implement
 
 }

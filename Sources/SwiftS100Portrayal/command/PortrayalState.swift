@@ -5,6 +5,8 @@
 
 import Foundation
 
-struct PortrayalState: Sendable {
+class PortrayalState {
+    
+    var lineStyles: [LineStyle] = []
     
 }

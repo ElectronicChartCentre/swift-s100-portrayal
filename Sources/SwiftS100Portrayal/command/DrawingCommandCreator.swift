@@ -19,6 +19,9 @@ struct DrawingCommandCreator: Sendable {
         registry["DisplayPlane"] = DisplayPlane.handle(state:args:)
         registry["DrawingPriority"] = DrawingPriorityCommand.handle(state:args:)
 
+        // line style
+        registry["LineStyle"] = LineStyleCommand.handle(state:args:)
+
         // drawing commands
         registry["LineInstruction"] = LineInstruction.init(state:args:)
         registry["ColorFill"] = ColorFill.init(state:args:)
@@ -47,6 +50,5 @@ struct DrawingCommandCreator: Sendable {
         
         return drawingCommands
     }
-    
     
 }

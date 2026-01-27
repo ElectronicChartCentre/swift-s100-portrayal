@@ -5,11 +5,34 @@
 
 import Foundation
 
-struct LineInstruction: DrawingCommand {
+public struct LineInstruction: DrawingCommand {
+    
+    private let lineStylesFromState: [LineStyle]
+    private let lineStylesFromStateByName: [String: LineStyle]
+    private let lineStyleReferences: [String]
     
     init(state: PortrayalState, args: [String]) {
-        // TODO: implement
+        lineStylesFromState = state.lineStyles
+        
+        var byName: [String: LineStyle] = [:]
+        for lineStyle in lineStylesFromState {
+            byName[lineStyle.name] = lineStyle
+        }
+        lineStylesFromStateByName = byName
 
+        lineStyleReferences = args
+    }
+    
+    func lineStyles(portrayalCatalogue: PortrayalCatalogue) -> [LineStyle] {
+        var lineStyles: [LineStyle] = []
+        for lineStyleReference in lineStyleReferences {
+            if let lineStyle = lineStylesFromStateByName[lineStyleReference] {
+                lineStyles.append(lineStyle)
+            } else if let lineStyle = portrayalCatalogue.lineStyleByName[lineStyleReference] {
+                lineStyles.append(lineStyle)
+            }
+        }
+        return lineStyles
     }
     
 }

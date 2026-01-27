@@ -17,7 +17,7 @@ public class LuaRuleExecutor {
     
     private var dsf: DataSetFile?
     private var featureById: [String: FeatureTypeRecord] = [:]
-    private var drawingCommands: [DrawingCommand] = []
+    private var drawingCommands: [FeatureDrawingCommand] = []
     
     private let debug: Bool = true
     
@@ -116,7 +116,7 @@ public class LuaRuleExecutor {
         let _ = call("PortrayalInitializeContextParameters", [toLuaTable(contextParameters)])
     }
 
-    func portrayal(features: [FeatureTypeRecord]) -> [DrawingCommand] {
+    func portrayal(features: [FeatureTypeRecord]) -> [FeatureDrawingCommand] {
         
         drawingCommands.removeAll()
         
@@ -148,7 +148,7 @@ public class LuaRuleExecutor {
         return "\(dsnm):\(recordIdentifier.rcnm):\(recordIdentifier.rcid)"
     }
     
-    private static func createRecordIdentifier(recordId: String) -> RecordIdentifier? {
+    public static func createRecordIdentifier(recordId: String) -> RecordIdentifier? {
         let parts = recordId.split(separator: ":")
         if let rcnm = Int(parts[1]), let rcid = Int(parts[2]) {
             return RecordIdentifier(rcnm: rcnm, rcid: rcid)
@@ -753,8 +753,10 @@ public class LuaRuleExecutor {
         print("DEBUG: HostPortrayalEmit. featureId: \(featureId)(\(ftcd)), drawing instructions: \(drawingInstructions), observed parameters:  \(observedParameters)")
         
         let def = DataExchangeFormat(drawingInstructions)
-        let drawingCommands = DrawingCommandCreator.shared.create(def: def)
-        self.drawingCommands.append(contentsOf: drawingCommands)
+        for drawingCommand in DrawingCommandCreator.shared.create(def: def) {
+            let featureDrawingCommand = FeatureDrawingCommand(featureId: featureId, drawingCommand: drawingCommand)
+            self.drawingCommands.append(featureDrawingCommand)
+        }
         
         return .value(true as Value)
     }

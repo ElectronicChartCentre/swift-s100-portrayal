@@ -5,6 +5,6 @@
 
 import Foundation
 
-protocol DrawingCommand: Command {
+public protocol DrawingCommand: Sendable {
     
 }

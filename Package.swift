@@ -18,6 +18,7 @@ let package = Package(
         .package(path: "../swift-s100-feature-catalogue"),
         //.package(url: "https://github.com/SwiftyLua/SwiftyLua", from: "0.1.0")
         .package(path: "../ext/SwiftyLua"),
+        .package(url: "https://github.com/PureSwift/Silica", branch: "master"),
     ],
     targets: [
         .target(
@@ -25,7 +26,8 @@ let package = Package(
             dependencies: [
                 .product(name: "SwiftS101", package: "swift-s101"),
                 .product(name: "SwiftS100FeatureCatalogue", package: "swift-s100-feature-catalogue"),
-                .product(name: "SwiftyLua", package: "SwiftyLua")
+                .product(name: "SwiftyLua", package: "SwiftyLua"),
+                .product(name: "Silica", package: "Silica", condition: .when(platforms: [.linux]))
             ],
         ),
         .testTarget(

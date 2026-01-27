@@ -5,6 +5,6 @@
 
 import Foundation
 
-protocol StateCommand: Command {
+protocol StateCommand: Sendable {
     
 }

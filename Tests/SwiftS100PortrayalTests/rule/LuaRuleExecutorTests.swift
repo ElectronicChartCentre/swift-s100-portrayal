@@ -5,9 +5,10 @@
 
 import Testing
 import Foundation
+import SwiftGeo
+import SwiftS101
+import SwiftS100FeatureCatalogue
 @testable import SwiftS100Portrayal
-@testable import SwiftS101
-@testable import SwiftS100FeatureCatalogue
 
 struct LuaRuleExecutorTests {
 
@@ -42,8 +43,8 @@ struct LuaRuleExecutorTests {
 
         let lre = LuaRuleExecutor(portrayalCatalogue: pc, featureCatalogue: fc)
         lre.setUp(dsf: dsf)
-        let drawingCommands = lre.portrayal(features: dsf.featureTypeRecords())
-        #expect(!drawingCommands.isEmpty)
+        let featureDrawingCommands = lre.portrayal(features: dsf.featureTypeRecords())
+        #expect(!featureDrawingCommands.isEmpty)
     }
     
     @Test func testPortrayal101AA00DS0016() async throws {
@@ -76,8 +77,60 @@ struct LuaRuleExecutorTests {
 
         let lre = LuaRuleExecutor(portrayalCatalogue: pc, featureCatalogue: fc)
         lre.setUp(dsf: dsf)
-        let drawingCommands = lre.portrayal(features: dsf.featureTypeRecords())
-        #expect(!drawingCommands.isEmpty)
+        let featureDrawingCommands = lre.portrayal(features: dsf.featureTypeRecords())
+        #expect(!featureDrawingCommands.isEmpty)
+        
+        guard let boundingBox = dsf.boundingBox() else {
+            Issue.record("Dataset has no bounding box")
+            return
+        }
+        
+        let widthPoint = 600
+        let heightPoint = 600
+        
+        let projection = LLXYProjection(bbox: boundingBox, widthPoint: widthPoint, heightPoint: heightPoint, pixelsPrPoint: 2)
+        
+        guard let colorPalette = pc.colorPaletteByName["Day"] else {
+            Issue.record("Could not find color palette")
+            return
+        }
+        
+        let screenResolution = ScreenResolution(pixelsPrPoint: 2)
+        
+        guard let renderer = CoreGraphicsRenderer(widthPoint: widthPoint, heightPoint: heightPoint, pixelsPrPoint: 2, projection: projection, colorPalette: colorPalette, screenResolution: screenResolution, portrayalCatalogue: pc) else {
+            Issue.record("Could not create renderer")
+            return
+        }
+
+        let geometryCreator = DefaultGeometryCreator()
+        for featureDrawingCommand in featureDrawingCommands {
+            guard let recordIdentifier = LuaRuleExecutor.createRecordIdentifier(recordId: featureDrawingCommand.featureId) else {
+                Issue.record("Could not create record identifier from \(featureDrawingCommand.featureId)")
+                return
+            }
+            
+            guard let feature = dsf.record(forIdentifier: recordIdentifier) as? FeatureTypeRecord else {
+                Issue.record("Could not find feature record from \(recordIdentifier)")
+                return
+            }
+            
+            let geometry = feature.createGeometry(dsf: dsf, creator: geometryCreator)
+            
+            renderer.add(geometry: geometry, drawingCommand: featureDrawingCommand.drawingCommand)
+        }
+        
+        guard let imageData = renderer.asPNGData() else {
+            Issue.record("Could not encode as PNG")
+            return
+        }
+        
+        do {
+            try imageData.write(to: URL(fileURLWithPath: "/tmp/101AA00DS0016.000.png"))
+        } catch {
+            Issue.record("Could not write PNG. \(error)")
+            return
+        }
+        
     }
 
 }

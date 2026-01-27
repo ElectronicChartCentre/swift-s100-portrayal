@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct ColorFill: DrawingCommand {
+public struct ColorFill: DrawingCommand {
     
     init(state: PortrayalState, args: [String]) {
         // TODO: implement

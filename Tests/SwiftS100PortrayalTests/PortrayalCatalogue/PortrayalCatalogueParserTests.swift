@@ -19,7 +19,8 @@ struct PortrayalCatalogueParserTests {
         #expect(pc.areaFillById.count == 25)
         #expect(pc.ruleFileById.count == 215)
         #expect(pc.symbolById.count == 718)
-        #expect(pc.lineStyleById.count == 59)
+        // TODO: handle compositeLineStyle
+        #expect(pc.lineStyleByName.count == 57)
         #expect(pc.colorProfileById.count == 1)
         #expect(pc.styleSheetById.count == 3)
         #expect(pc.viewingGroupById.count == 133)
@@ -41,7 +42,7 @@ struct PortrayalCatalogueParserTests {
         #expect(pc.areaFillById.count == 1)
         #expect(pc.ruleFileById.count == 9)
         #expect(pc.symbolById.count == 5)
-        #expect(pc.lineStyleById.count == 2)
+        #expect(pc.lineStyleByName.count == 2)
         #expect(pc.colorProfileById.count == 1)
         #expect(pc.styleSheetById.count == 3)
         #expect(pc.viewingGroupById.count == 3)
