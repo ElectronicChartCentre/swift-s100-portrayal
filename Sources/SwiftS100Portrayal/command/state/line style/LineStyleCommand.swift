@@ -26,7 +26,7 @@ struct LineStyleCommand: LineStyleStateCommand {
         let width = Double(args[2]) ?? 0
         let token = args[3]
 
-        // TODO: handle with more parameters
+        // TODO: handle [,capStyle[,joinStyle[,offset]]]]
         
         let pen = Pen(width: width, color: token)
         let dashs = state.lineStyleState.consumeDashs()

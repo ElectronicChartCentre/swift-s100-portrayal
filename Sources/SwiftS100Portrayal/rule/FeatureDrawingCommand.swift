@@ -5,9 +5,9 @@
 
 import Foundation
 
-struct FeatureDrawingCommand {
+public struct FeatureDrawingCommand {
     
-    let featureId: String
-    let drawingCommand: DrawingCommand
+    public let featureId: String
+    public let drawingCommand: DrawingCommand
     
 }

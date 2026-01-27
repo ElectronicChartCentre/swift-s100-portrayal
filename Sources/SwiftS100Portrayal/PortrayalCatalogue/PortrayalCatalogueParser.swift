@@ -10,7 +10,7 @@ import Foundation
 import FoundationXML
 #endif
 
-class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
+public class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
     
     private let bundle: Bundle
     private let portrayalCataloguePath: String
@@ -34,7 +34,7 @@ class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
         self.portrayalCataloguePath = portrayalCataloguePath
     }
 
-    static func parse(bundle: Bundle, portrayalCataloguePath: String) -> PortrayalCatalogue? {
+    public static func parse(bundle: Bundle, portrayalCataloguePath: String) -> PortrayalCatalogue? {
         
         guard let portrayalCatalogueXMLURL = bundle.url(forResource: "\(portrayalCataloguePath)/portrayal_catalogue", withExtension: "xml") else {
             return nil
@@ -69,7 +69,7 @@ class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
         }
     }
     
-    func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
+    public func parser(_ parser: XMLParser, didStartElement elementName: String, namespaceURI: String?, qualifiedName qName: String?, attributes attributeDict: [String : String] = [:]) {
         
         elementLevel += 1
         currentElementValue = ""
@@ -87,11 +87,11 @@ class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
 
     }
     
-    func parser(_ parser: XMLParser, foundCharacters string: String) {
+    public func parser(_ parser: XMLParser, foundCharacters string: String) {
         currentElementValue.append(string)
     }
     
-    func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
+    public func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
         
         if elementLevel == 4 {
             if "description" == elementName {

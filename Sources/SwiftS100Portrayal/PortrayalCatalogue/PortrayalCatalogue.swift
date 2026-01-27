@@ -18,6 +18,6 @@ public struct PortrayalCatalogue {
     let styleSheetById: [String: StyleSheet]
     let viewingGroupById: [String: ViewingGroup]
 
-    let colorPaletteByName: [String: ColorPalette]
+    public let colorPaletteByName: [String: ColorPalette]
     
 }

@@ -92,11 +92,12 @@ public class LuaRuleExecutor {
         lua.registerFunction(.init(name: "HostInformationTypeGetSimpleAttribute", parameters: [String.arg, String.arg, String.arg], fn: HostInformationTypeGetSimpleAttribute(_:)))
         lua.registerFunction(.init(name: "HostGetSpatial", parameters: [String.arg], fn: HostGetSpatial(_:)))
         lua.registerFunction(.init(name: "HostFeatureGetAssociatedFeatureIDs", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetAssociatedFeatureIDs(_:)))
+        lua.registerFunction(.init(name: "HostInformationTypeGetCode", parameters: [String.arg], fn: HostInformationTypeGetCode(_:)))
         lua.registerFunction(.init(name: "HostPortrayalEmit", parameters: [String.arg, String.arg, String.arg], fn: HostPortrayalEmit(_:)))
         
     }
     
-    func setUp(dsf: DataSetFile) {
+    public func setUp(dsf: DataSetFile) {
         
         featureById.removeAll()
         
@@ -117,7 +118,7 @@ public class LuaRuleExecutor {
         let _ = call("PortrayalInitializeContextParameters", [toLuaTable(contextParameters)])
     }
     
-    func portrayal(features: [FeatureTypeRecord]) -> [FeatureDrawingCommand] {
+    public func portrayal(features: [FeatureTypeRecord]) -> [FeatureDrawingCommand] {
         
         drawingCommands.removeAll()
         
@@ -125,7 +126,8 @@ public class LuaRuleExecutor {
             return []
         }
         
-        // TODO: cache drawing commands pr feature id and observed context parameter(s)
+        // TODO: cache drawing commands pr feature id and observed context parameter(s)?
+        // TODO: or should that be done outside of this class?
         
         var featureIdsToPortray: Set<String> = []
         for feature in features {
@@ -195,52 +197,80 @@ public class LuaRuleExecutor {
     }
     
     private func HostGetFeatureIDs(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostGetFeatureIDs")
+        if debug {
+            print("DEBUG: HostGetFeatureIDs")
+        }
+        
         return .value(toLuaTable(featureById.keys.sorted()))
     }
     
     private func HostFeatureGetCode(_ args: Arguments) -> SwiftReturnValue {
         let featureId = args.string
         guard let feature = featureById[featureId] else {
-            print("DEBUG: HostFeatureGetCode. unknown feature. \(featureId)")
+            print("ERROR: HostFeatureGetCode. unknown feature. \(featureId)")
             return .nothing
         }
-        print("DEBUG: HostFeatureGetCode. \(feature.frid.ftcd)")
+        
+        if debug {
+            print("DEBUG: HostFeatureGetCode. \(feature.frid.ftcd)")
+        }
+        
         return .value(feature.frid.ftcd)
     }
     
     private func HostGetFeatureTypeCodes(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostGetFeatureTypeCodes")
+        if debug {
+            print("DEBUG: HostGetFeatureTypeCodes")
+        }
+        
         return .value(toLuaTable(featureCatalogue.featureTypeByCode.keys.sorted()))
     }
     
     private func HostGetInformationTypeCodes(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostGetInformationTypeCodes")
+        if debug {
+            print("DEBUG: HostGetInformationTypeCodes")
+        }
+        
         return .value(toLuaTable(featureCatalogue.informationTypeByCode.keys.sorted()))
     }
     
     private func HostGetSimpleAttributeTypeCodes(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostGetSimpleAttributeTypeCodes")
+        if debug {
+            print("DEBUG: HostGetSimpleAttributeTypeCodes")
+        }
+        
         return .value(toLuaTable(featureCatalogue.simpleAttributeByCode.keys.sorted()))
     }
     
     private func HostGetComplexAttributeTypeCodes(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostGetComplexAttributeTypeCodes")
+        if debug {
+            print("DEBUG: HostGetComplexAttributeTypeCodes")
+        }
+        
         return .value(toLuaTable(featureCatalogue.complexAttributeByCode.keys.sorted()))
     }
     
     private func HostGetRoleTypeCodes(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostGetRoleTypeCodes")
+        if debug {
+            print("DEBUG: HostGetRoleTypeCodes")
+        }
+        
         return .value(toLuaTable(featureCatalogue.roleByCode.keys.sorted()))
     }
     
     private func HostGetInformationAssociationTypeCodes(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostGetInformationAssociationTypeCodes")
+        if debug {
+            print("DEBUG: HostGetInformationAssociationTypeCodes")
+        }
+        
         return .value(toLuaTable(featureCatalogue.informationAssociationByCode.keys.sorted()))
     }
     
     private func HostGetFeatureAssociationTypeCodes(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostGetFeatureAssociationTypeCodes")
+        if debug {
+            print("DEBUG: HostGetFeatureAssociationTypeCodes")
+        }
+        
         return .value(toLuaTable(featureCatalogue.featureAssociationByCode.keys.sorted()))
     }
     
@@ -272,7 +302,10 @@ public class LuaRuleExecutor {
                 return v
             }
             
-            print("DEBUG: \(functionName) returned nil")
+            if debug {
+                print("DEBUG: \(functionName) returned nil")
+            }
+            
             return nil
         } catch {
             print("ERROR: \(functionName) problem. \(error)")
@@ -345,7 +378,10 @@ public class LuaRuleExecutor {
     }
     
     private func HostGetFeatureTypeInfo(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostGetFeatureTypeInfo")
+        if debug {
+            print("DEBUG: HostGetFeatureTypeInfo")
+        }
+        
         let code = args.string
         
         guard let featureType = featureCatalogue.featureTypeByCode[code] else {
@@ -405,7 +441,10 @@ public class LuaRuleExecutor {
     
     
     private func HostGetSimpleAttributeTypeInfo(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostGetSimpleAttributeTypeInfo")
+        if debug {
+            print("DEBUG: HostGetSimpleAttributeTypeInfo")
+        }
+        
         let code = args.string
         
         guard let attribute = featureCatalogue.simpleAttributeByCode[code] else {
@@ -432,7 +471,6 @@ public class LuaRuleExecutor {
     }
     
     private func luaCreateSpatialAssociation(_ referencedRecordIdentifier: RecordIdentifier, _ ornt: Int, smin: Int?, smax: Int?) -> Value? {
-        
         
         guard let dsf = dsf else {
             return nil
@@ -477,7 +515,10 @@ public class LuaRuleExecutor {
             }
         }
         
-        print("DEBUG: HostFeatureGetSpatialAssociations. \(featureId) -> \(feature.spass().count) \(spass.count)")
+        if debug {
+            print("DEBUG: HostFeatureGetSpatialAssociations. \(featureId) -> \(feature.spass().count) \(spass.count)")
+        }
+        
         return .value(toLuaTable(spass))
     }
     
@@ -485,7 +526,10 @@ public class LuaRuleExecutor {
         let featureId = args.string
         let associationCode = args.string
         let roleCode = args.string
-        print("DEBUG: HostFeatureGetAssociatedInformationIDs. \(featureId) \(associationCode) \(roleCode)")
+        
+        if debug {
+            print("DEBUG: HostFeatureGetAssociatedInformationIDs. \(featureId) \(associationCode) \(roleCode)")
+        }
         
         guard let dsf = dsf else {
             return .nothing
@@ -498,9 +542,11 @@ public class LuaRuleExecutor {
         var associatedFeatureIds: [String] = []
         for fasc in feature.fascs() {
             // TODO: filter on associationCode and roleCode
-            
-            let associatedFeatureId = LuaRuleExecutor.createRecordId(dsf: dsf, recordIdentifier: fasc.referencedRecordIdentifier)
-            associatedFeatureIds.append(associatedFeatureId)
+
+            if let _ = dsf.record(forIdentifier: fasc.referencedRecordIdentifier) as? InformationTypeRecord {
+                let associatedFeatureId = LuaRuleExecutor.createRecordId(dsf: dsf, recordIdentifier: fasc.referencedRecordIdentifier)
+                associatedFeatureIds.append(associatedFeatureId)
+            }
         }
         
         return .value(toLuaTable(associatedFeatureIds))
@@ -523,7 +569,10 @@ public class LuaRuleExecutor {
     }
     
     private func HostGetComplexAttributeTypeInfo(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostGetComplexAttributeTypeInfo")
+        if debug {
+            print("DEBUG: HostGetComplexAttributeTypeInfo")
+        }
+        
         let attributeCode = args.string
         guard let complexAttribute = featureCatalogue.complexAttributeByCode[attributeCode] else {
             return .nothing
@@ -546,7 +595,10 @@ public class LuaRuleExecutor {
     }
     
     private func HostFeatureGetSimpleAttribute(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostFeatureGetSimpleAttribute")
+        if debug {
+            print("DEBUG: HostFeatureGetSimpleAttribute")
+        }
+        
         let featureId = args.string
         let path = args.string
         let attributeCode = args.string
@@ -574,7 +626,10 @@ public class LuaRuleExecutor {
     }
     
     private func HostFeatureGetComplexAttributeCount(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostFeatureGetComplexAttributeCount")
+        if debug {
+            print("DEBUG: HostFeatureGetComplexAttributeCount")
+        }
+        
         let featureId = args.string
         let path = args.string
         let attributeCode = args.string
@@ -593,7 +648,10 @@ public class LuaRuleExecutor {
     }
     
     private func HostInformationTypeGetSimpleAttribute(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostInformationTypeGetSimpleAttribute")
+        if debug {
+            print("DEBUG: HostInformationTypeGetSimpleAttribute")
+        }
+        
         let informationTypeId = args.string
         let path = args.string
         let attributeCode = args.string
@@ -668,7 +726,9 @@ public class LuaRuleExecutor {
     }
     
     private func HostGetSpatial(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostGetSpatial")
+        if debug {
+            print("DEBUG: HostGetSpatial")
+        }
         let spatialId = args.string
         
         guard let dsf = dsf else {
@@ -683,7 +743,9 @@ public class LuaRuleExecutor {
             return .nothing
         }
         
-        print("DEBUG: HostGetSpatial.. " + record.spatialType())
+        if debug {
+            print("DEBUG: HostGetSpatial.. " + record.spatialType())
+        }
         
         if let pointRecord = record as? PointRecord {
             if let c2it = pointRecord.c2it() {
@@ -752,7 +814,9 @@ public class LuaRuleExecutor {
     }
     
     private func HostFeatureGetAssociatedFeatureIDs(_ args: Arguments) -> SwiftReturnValue {
-        print("DEBUG: HostFeatureGetAssociatedFeatureIDs")
+        if debug {
+            print("DEBUG: HostFeatureGetAssociatedFeatureIDs")
+        }
         
         // TODO: implement
         
@@ -762,6 +826,28 @@ public class LuaRuleExecutor {
         //let roleCode = args.string
         
         return .value(toLuaTable([]))
+    }
+    
+    private func HostInformationTypeGetCode(_ args: Arguments) -> SwiftReturnValue {
+        if debug {
+            print("DEBUG: HostInformationTypeGetCode")
+        }
+        
+        let informationTypeID = args.string
+        
+        guard let recordIdenfier = LuaRuleExecutor.createRecordIdentifier(recordId: informationTypeID) else {
+            return .nothing
+        }
+        
+        guard let informationTypeRecord = dsf?.record(forIdentifier: recordIdenfier) as? InformationTypeRecord else {
+            return .nothing
+        }
+        
+        guard let code = dsf?.generalInformation?.itcd(itnc: informationTypeRecord.irid.nitc) else {
+            return .nothing
+        }
+        
+        return .value(code)
     }
         
     private func HostPortrayalEmit(_ args: Arguments) -> SwiftReturnValue {
