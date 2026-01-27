@@ -83,11 +83,45 @@ public struct CoreGraphicsRenderer: Renderer {
     }
     
     public func add(geometry: Geometry, drawingCommand: DrawingCommand) {
-        if let lineInstruction = drawingCommand as? LineInstruction {
+        if let colorFill = drawingCommand as? ColorFill {
+            add(geometry: geometry, colorFill: colorFill)
+        } else if let lineInstruction = drawingCommand as? LineInstruction {
             add(geometry: geometry, lineInstruction: lineInstruction)
         } else {
             print("TODO: handle \(drawingCommand)")
         }
+    }
+    
+    private func add(geometry: Geometry, colorFill: ColorFill) {
+        context.saveGState()
+        
+        let geometryXY = projection.forward(geometry: geometry)
+        
+        if let color = cgcolor(colorFill.token, transparency: colorFill.transparency) {
+            context.setStrokeColor(color)
+            context.setFillColor(color)
+        } else {
+            context.setStrokeColor(CGColor(red: 1.0, green: 0, blue: 0, alpha: 0.5))
+            context.setFillColor(CGColor(red: 1.0, green: 0, blue: 0, alpha: 0.5))
+        }
+        
+        if let polygonXY = geometryXY as? SwiftGeo.Polygon {
+            context.beginPath()
+            for (idx, point) in polygonXY.shell.coordinates.enumerated() {
+                if idx == 0 {
+                    context.move(to: CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
+                } else {
+                    context.addLine(to: CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
+                }
+            }
+            context.closePath()
+            context.fillPath()
+            context.strokePath()
+            
+            // TODO: holes..
+        }
+        
+        context.restoreGState()
     }
     
     private func add(geometry: Geometry, lineInstruction: LineInstruction) {
@@ -104,8 +138,32 @@ public struct CoreGraphicsRenderer: Renderer {
         } else {
             context.setStrokeColor(CGColor(red: 1.0, green: 0, blue: 0, alpha: 0.5))
         }
-        
-        print("DEBUG: intervalLength: \(lineStyle.intervalLength), dashs: \(lineStyle.dashs) ")
+
+        // TODO: does not look very good..
+        if !lineStyle.dashs.isEmpty {
+            var dashPhase: CGFloat = 0.0
+            var dashLengths: [CGFloat] = []
+            let intervalLengthPx = screenResolution.pixels(mm: lineStyle.intervalLength)
+            for dash in lineStyle.dashs {
+                let dashStartPx = screenResolution.pixels(mm: dash.start)
+                if dashStartPx > intervalLengthPx {
+                    continue
+                }
+                var dashLengthPx = screenResolution.pixels(mm: dash.length)
+                if dashLengthPx > intervalLengthPx {
+                    dashLengthPx = intervalLengthPx - dashStartPx
+                }
+                let gap = intervalLengthPx - dashLengthPx
+                dashPhase = intervalLengthPx - dashStartPx
+                
+                // only last?
+                dashLengths.removeAll()
+                
+                dashLengths.append(max(0, dashLengthPx))
+                dashLengths.append(gap)
+            }
+            context.setLineDash(phase: dashPhase, lengths: dashLengths)
+        }
 
         context.setLineWidth(screenResolution.pixels(mm: lineStyle.pen.width))
         
@@ -137,7 +195,18 @@ public struct CoreGraphicsRenderer: Renderer {
     
     private func cgcolor(_ token: String) -> CGColor? {
         if let color = colorPalette.itemByToken[token]?.srgb {
-            // TODO: cache?
+            return CGColor(red: Double(color.red) / 255.0, green: Double(color.green) / 255.0, blue: Double(color.blue) / 255.0, alpha: 1.0)
+        }
+        return nil
+    }
+    
+    private func cgcolor(_ token: String, transparency: Double) -> CGColor? {
+        if let color = colorPalette.itemByToken[token]?.srgb {
+            
+            if transparency > 0 {
+                return CGColor(red: Double(color.red) / 255.0, green: Double(color.green) / 255.0, blue: Double(color.blue) / 255.0, alpha: 1.0 - transparency)
+            }
+            
             return CGColor(red: Double(color.red) / 255.0, green: Double(color.green) / 255.0, blue: Double(color.blue) / 255.0, alpha: 1.0)
         }
         return nil

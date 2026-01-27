@@ -42,7 +42,7 @@ public class LuaRuleExecutor {
             print("DEBUG: could not find \(fileNameWithoutSuffix).lua")
             return
         }
-
+        
         let path = url.deletingLastPathComponent().path()
         
         do {
@@ -60,7 +60,7 @@ public class LuaRuleExecutor {
                 print("DEBUG: could not find \(fileNameWithoutSuffix).lua")
                 return
             }
-
+            
             try lua.execute(url: url)
         } catch {
             print("ERROR: could not load portrayal catalogue lua files. \(error)")
@@ -72,7 +72,7 @@ public class LuaRuleExecutor {
             lua.registerFunction(.init(name: "HostDebuggerEntry", parameters: [String.arg, String.arg], fn: HostDebuggerEntry(_:)))
             lua.registerFunction(.init(name: "HostDebuggerEntry", parameters: [String.arg, String.arg, Nil.arg], fn: HostDebuggerEntry(_:)))
         }
-
+        
         lua.registerFunction(.init(name: "HostGetFeatureIDs", fn: HostGetFeatureIDs(_:)))
         lua.registerFunction(.init(name: "HostFeatureGetCode", parameters: [String.arg], fn: HostFeatureGetCode(_:)))
         lua.registerFunction(.init(name: "HostGetFeatureTypeCodes", fn: HostGetFeatureTypeCodes(_:)))
@@ -91,8 +91,9 @@ public class LuaRuleExecutor {
         lua.registerFunction(.init(name: "HostFeatureGetComplexAttributeCount", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetComplexAttributeCount(_:)))
         lua.registerFunction(.init(name: "HostInformationTypeGetSimpleAttribute", parameters: [String.arg, String.arg, String.arg], fn: HostInformationTypeGetSimpleAttribute(_:)))
         lua.registerFunction(.init(name: "HostGetSpatial", parameters: [String.arg], fn: HostGetSpatial(_:)))
+        lua.registerFunction(.init(name: "HostFeatureGetAssociatedFeatureIDs", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetAssociatedFeatureIDs(_:)))
         lua.registerFunction(.init(name: "HostPortrayalEmit", parameters: [String.arg, String.arg, String.arg], fn: HostPortrayalEmit(_:)))
-
+        
     }
     
     func setUp(dsf: DataSetFile) {
@@ -100,12 +101,12 @@ public class LuaRuleExecutor {
         featureById.removeAll()
         
         self.dsf = dsf
-
+        
         for feature in dsf.featureTypeRecords() {
             let featureId = LuaRuleExecutor.createRecordId(dsf: dsf, record: feature)
             featureById[featureId] = feature
         }
-
+        
         var contextParameters: [any Value] = []
         for contextParameter in ContextParameters.defaultContextParameters().parameterByName.values {
             if let cp = luaPortrayalCreateContextParameter(contextParameter) {
@@ -115,7 +116,7 @@ public class LuaRuleExecutor {
         
         let _ = call("PortrayalInitializeContextParameters", [toLuaTable(contextParameters)])
     }
-
+    
     func portrayal(features: [FeatureTypeRecord]) -> [FeatureDrawingCommand] {
         
         drawingCommands.removeAll()
@@ -134,7 +135,20 @@ public class LuaRuleExecutor {
         
         let _ = call("PortrayalMain", [toLuaTable(featureIdsToPortray.sorted())])
         
-        // TODO: sort the drawing commands here?
+        // try to sort.
+        // TODO: is it correct?
+        drawingCommands.sort { (lhs: FeatureDrawingCommand, rhs: FeatureDrawingCommand) -> Bool in
+
+            if lhs.drawingCommand.visibilityState.displayPlaneIsOverRadar != rhs.drawingCommand.visibilityState.displayPlaneIsOverRadar {
+                return lhs.drawingCommand.visibilityState.displayPlaneIsOverRadar
+            }
+            
+            if lhs.drawingCommand.visibilityState.drawingPriority != rhs.drawingCommand.visibilityState.drawingPriority {
+                return lhs.drawingCommand.visibilityState.drawingPriority < rhs.drawingCommand.visibilityState.drawingPriority
+            }
+
+            return lhs.drawingCommand.instructionTypePriority < rhs.drawingCommand.instructionTypePriority
+        }
         
         return drawingCommands
     }
@@ -205,7 +219,7 @@ public class LuaRuleExecutor {
         print("DEBUG: HostGetInformationTypeCodes")
         return .value(toLuaTable(featureCatalogue.informationTypeByCode.keys.sorted()))
     }
-
+    
     private func HostGetSimpleAttributeTypeCodes(_ args: Arguments) -> SwiftReturnValue {
         print("DEBUG: HostGetSimpleAttributeTypeCodes")
         return .value(toLuaTable(featureCatalogue.simpleAttributeByCode.keys.sorted()))
@@ -292,7 +306,7 @@ public class LuaRuleExecutor {
         var args: [Value] = []
         args.append(luaCreateItem(namedType) ?? "")
         args.append(namedType.isAbstract)
-
+        
         var luaAttributeBindings: [Value] = []
         for attributeBinding in namedType.attributeBindingByName.values {
             if let ab = luaCreateAttributeBinding(attributeBinding) {
@@ -351,7 +365,7 @@ public class LuaRuleExecutor {
         let args: [Value?] = []
         return call("CreateAttributeConstraints", args)
     }
-
+    
     private func luaCreateListedValue(_ lv: ListedValue) -> Value? {
         var args: [Value?] = []
         args.append(lv.label)
@@ -382,14 +396,14 @@ public class LuaRuleExecutor {
             }
         }
         args.append(toLuaTable(luaListedValues))
-
+        
         if let a = call("CreateSimpleAttribute", args) {
             _luaCreateFeatureType[attribute.code] = a
             return a
         }
         return nil
     }
-
+    
     
     private func HostGetSimpleAttributeTypeInfo(_ args: Arguments) -> SwiftReturnValue {
         print("DEBUG: HostGetSimpleAttributeTypeInfo")
@@ -419,7 +433,7 @@ public class LuaRuleExecutor {
     }
     
     private func luaCreateSpatialAssociation(_ referencedRecordIdentifier: RecordIdentifier, _ ornt: Int, smin: Int?, smax: Int?) -> Value? {
-
+        
         
         guard let dsf = dsf else {
             return nil
@@ -494,7 +508,7 @@ public class LuaRuleExecutor {
     }
     
     private func luaCreateComplexAttribute(_ ca: ComplexAttribute) -> Value? {
-
+        
         var args: [Value?] = []
         args.append(luaCreateItem(ca) ?? "")
         
@@ -547,7 +561,7 @@ public class LuaRuleExecutor {
         }
         
         let attributePath = AttributePath(definition: path)
-
+        
         var values: [Value] = []
         for value in attributePath.resolveAttributePath(dsf: dsf, record: feature, atcd: attributeCode) {
             if value != "" {
@@ -598,7 +612,7 @@ public class LuaRuleExecutor {
         }
         
         let attributePath = AttributePath(definition: path)
-
+        
         var values: [Value] = []
         for value in attributePath.resolveAttributePath(dsf: dsf, record: record, atcd: attributeCode) {
             if value != "" {
@@ -607,7 +621,7 @@ public class LuaRuleExecutor {
                 values.append(uk)
             }
         }
-
+        
         return .value(toLuaTable(values))
     }
     
@@ -631,7 +645,7 @@ public class LuaRuleExecutor {
         } else {
             args.append(toLuaTable(ints))
         }
-
+        
         return call("CreateSurface", args)
     }
     
@@ -672,7 +686,6 @@ public class LuaRuleExecutor {
         
         print("DEBUG: HostGetSpatial.. " + record.spatialType())
         
-        // TODO: implement
         if let pointRecord = record as? PointRecord {
             if let c2it = pointRecord.c2it() {
                 return .value(luaCreatePoint(xcoo: c2it.xcoo, ycoo: c2it.ycoo, zcoo: nil))
@@ -737,6 +750,19 @@ public class LuaRuleExecutor {
             print("ERROR: HostGetSpatial invalid geometry record type. \(record)")
             return .nothing
         }
+    }
+    
+    private func HostFeatureGetAssociatedFeatureIDs(_ args: Arguments) -> SwiftReturnValue {
+        print("DEBUG: HostFeatureGetAssociatedFeatureIDs")
+        
+        // TODO: implement
+        
+        let featureId = args.string
+        let associationCode = args.string
+        // how to handle optional argument?
+        //let roleCode = args.string
+        
+        return .value(toLuaTable([]))
     }
         
     private func HostPortrayalEmit(_ args: Arguments) -> SwiftReturnValue {

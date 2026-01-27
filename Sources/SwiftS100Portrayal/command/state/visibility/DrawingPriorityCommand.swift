@@ -8,7 +8,12 @@ import Foundation
 struct DrawingPriorityCommand: VisibilityStateCommand {
     
     static func handle(state: PortrayalState, args: [String]) -> DrawingCommand? {
-        // TODO: implement
+        
+        // DrawingPriority:15
+        if let drawingPriority = Int(args.first ?? "") {
+            state.visibilityState.drawingPriority = drawingPriority
+        }
+        
         return nil
     }
     

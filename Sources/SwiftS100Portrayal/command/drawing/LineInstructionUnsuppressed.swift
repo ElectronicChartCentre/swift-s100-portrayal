@@ -7,6 +7,10 @@ import Foundation
 
 public struct LineInstructionUnsuppressed: DrawingCommand {
     
+    public let visibilityState: VisibilityState.Record
+    
+    public let instructionTypePriority = 80
+    
     // TODO: implement
 
 }
