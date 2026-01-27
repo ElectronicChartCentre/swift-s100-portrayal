@@ -136,11 +136,10 @@ public class LuaRuleExecutor {
         let _ = call("PortrayalMain", [toLuaTable(featureIdsToPortray.sorted())])
         
         // try to sort.
-        // TODO: is it correct?
         drawingCommands.sort { (lhs: FeatureDrawingCommand, rhs: FeatureDrawingCommand) -> Bool in
 
             if lhs.drawingCommand.visibilityState.displayPlaneIsOverRadar != rhs.drawingCommand.visibilityState.displayPlaneIsOverRadar {
-                return lhs.drawingCommand.visibilityState.displayPlaneIsOverRadar
+                return !lhs.drawingCommand.visibilityState.displayPlaneIsOverRadar
             }
             
             if lhs.drawingCommand.visibilityState.drawingPriority != rhs.drawingCommand.visibilityState.drawingPriority {
