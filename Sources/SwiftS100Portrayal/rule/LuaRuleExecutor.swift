@@ -97,9 +97,13 @@ public class LuaRuleExecutor {
         
     }
     
-    public func setUp(dsf: DataSetFile) {
-        
+    public func clearState() {
         featureById.removeAll()
+        drawingCommands.removeAll()
+    }
+    
+    public func setUp(dsf: DataSetFile) {
+        clearState()
         
         self.dsf = dsf
         
@@ -295,6 +299,10 @@ public class LuaRuleExecutor {
             luaCode.removeLast(2)
         }
         luaCode.append(")")
+        
+        if debug {
+            print("DEBUG: lua code: \(luaCode)")
+        }
         
         do {
             let result = try lua.execute(string: luaCode, args: nonNilArgs)
@@ -706,7 +714,9 @@ public class LuaRuleExecutor {
         return call("CreateSurface", args)
     }
     
-    private func luaCreateCompositeCurve(_ args: [Value]) -> Value? {
+    private func luaCreateCompositeCurve(_ curveAssociations: [Value]) -> Value? {
+        var args: [Value?] = []
+        args.append(toLuaTable(curveAssociations))
         return call("CreateCompositeCurve", args)
     }
     

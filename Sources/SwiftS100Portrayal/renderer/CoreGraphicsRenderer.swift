@@ -119,6 +119,8 @@ public struct CoreGraphicsRenderer: Renderer {
             context.strokePath()
             
             // TODO: holes..
+        } else {
+            print("ERROR: unsupported geometry type \(geometryXY) for fill")
         }
         
         context.restoreGState()
@@ -167,6 +169,12 @@ public struct CoreGraphicsRenderer: Renderer {
 
         context.setLineWidth(screenResolution.pixels(mm: lineStyle.pen.width))
         
+        strokePath(geometryXY)
+        
+        context.restoreGState()
+    }
+    
+    private func strokePath(_ geometryXY: Geometry) {
         if let polygonXY = geometryXY as? SwiftGeo.Polygon {
             strokePath(polygonXY.shell.coordinates)
             for hole in polygonXY.holes {
@@ -174,11 +182,15 @@ public struct CoreGraphicsRenderer: Renderer {
             }
         } else if let lineStringXY = geometryXY as? SwiftGeo.LineString {
             strokePath(lineStringXY.coordinates)
+        } else if let _ = geometryXY as? Point {
+            // ignore
+        } else if let multiGeometryXY = geometryXY as? MultiGeometry {
+            for subGeometryXY in multiGeometryXY.geometries {
+                strokePath(subGeometryXY)
+            }
         } else {
-            print("ERROR: unsupported geometry type for LineInstruction")
+            print("ERROR: unsupported geometry type \(geometryXY) for stroke")
         }
-        
-        context.restoreGState()
     }
     
     private func strokePath(_ coordinates: [Coordinate]) {
