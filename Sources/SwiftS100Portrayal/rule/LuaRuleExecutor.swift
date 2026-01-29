@@ -559,10 +559,6 @@ public class LuaRuleExecutor {
             if let r = luaCreateSpatialAssociation(spas) {
                 spass.append(r)
             }
-            
-            if let referenced = dsf?.record(forIdentifier: spas.referencedRecordIdentifier) {
-                print("DEBUG: HostFeatureGetSpatialAssociations \(featureId)(\(feature.frid.ftcd)) spas points to a \(referenced)")
-            }
         }
         
         if debug {
