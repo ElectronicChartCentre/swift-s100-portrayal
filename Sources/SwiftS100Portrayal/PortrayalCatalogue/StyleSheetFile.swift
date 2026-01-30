@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct Symbol {
+struct StyleSheetFile {
     
     let id: String
     let description: Description
@@ -13,7 +13,7 @@ struct Symbol {
     let fileType: String
     let fileFormat: String
     
-    static func create(_ kv: [String: String], id: String, description: Description) -> Symbol? {
+    static func create(_ kv: [String: String], id: String, description: Description) -> StyleSheetFile? {
         guard let fileName = kv["fileName"] else {
             return nil
         }
@@ -23,7 +23,11 @@ struct Symbol {
         guard let fileFormat = kv["fileFormat"] else {
             return nil
         }
-        return Symbol(id: id, description: description, fileName: fileName, fileType: fileType, fileFormat: fileFormat)
+        return StyleSheetFile(id: id, description: description, fileName: fileName, fileType: fileType, fileFormat: fileFormat)
     }
     
+    func fileNameWithoutSuffix() -> String {
+        return String(fileName.split(separator: ".")[0])
+    }
+
 }

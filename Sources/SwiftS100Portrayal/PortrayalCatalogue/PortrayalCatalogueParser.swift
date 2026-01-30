@@ -23,10 +23,10 @@ public class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
     
     private var areaFillById: [String: AreaFill] = [:]
     private var ruleFileById: [String: RuleFile] = [:]
-    private var symbolById: [String: Symbol] = [:]
+    private var symbolFileById: [String: SymbolFile] = [:]
     private var lineStyleById: [String: LineStyleFile] = [:]
-    private var colorProfileById: [String: ColorProfile] = [:]
-    private var styleSheetById: [String: StyleSheet] = [:]
+    private var colorProfileFileById: [String: ColorProfileFile] = [:]
+    private var styleSheetFileById: [String: StyleSheetFile] = [:]
     private var viewingGroupById: [String: ViewingGroup] = [:]
     
     private init(bundle: Bundle, portrayalCataloguePath: String) {
@@ -50,7 +50,7 @@ public class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
             xmlParser.parse()
             
             var colorPaletteByName: [String: ColorPalette] = [:]
-            for colorProfile in parser.colorProfileById.values {
+            for colorProfile in parser.colorProfileFileById.values {
                 if let aColorPaletteByName = ColorProfileParser.parse(bundle: bundle, portrayalCataloguePath: portrayalCataloguePath, colorProfile: colorProfile) {
                     colorPaletteByName.merge(aColorPaletteByName, uniquingKeysWith: { (_, new) in new })
                 }
@@ -63,7 +63,14 @@ public class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
                 }
             }
             
-            return PortrayalCatalogue(bundle: bundle, path: portrayalCataloguePath, areaFillById: parser.areaFillById, ruleFileById: parser.ruleFileById, symbolById: parser.symbolById, lineStyleByName: lineStyleByName, colorProfileById: parser.colorProfileById, styleSheetById: parser.styleSheetById, viewingGroupById: parser.viewingGroupById, colorPaletteByName: colorPaletteByName)
+            var symbolSVGByName: [String: SVG] = [:]
+            for symbolFile in parser.symbolFileById.values {
+                if let svg = SVGParser.parse(bundle: bundle, portrayalCataloguePath: portrayalCataloguePath, symbolFile: symbolFile) {
+                    symbolSVGByName[svg.name] = svg
+                }
+            }
+            
+            return PortrayalCatalogue(bundle: bundle, path: portrayalCataloguePath, areaFillById: parser.areaFillById, ruleFileById: parser.ruleFileById, symbolFileById: parser.symbolFileById, lineStyleByName: lineStyleByName, colorProfileFileById: parser.colorProfileFileById, styleSheetFileById: parser.styleSheetFileById, viewingGroupById: parser.viewingGroupById, colorPaletteByName: colorPaletteByName, symbolSVGByName: symbolSVGByName)
         } catch {
             return nil
         }
@@ -118,8 +125,8 @@ public class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
                         print("DEBUG: could not parse \(elementName) from \(currentKV)")
                     }
                 case "symbol":
-                    if let symbol = Symbol.create(currentKV, id: id, description: description) {
-                        symbolById[symbol.id] = symbol
+                    if let symbol = SymbolFile.create(currentKV, id: id, description: description) {
+                        symbolFileById[symbol.id] = symbol
                     } else {
                         print("DEBUG: could not parse \(elementName) from \(currentKV)")
                     }
@@ -130,14 +137,14 @@ public class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
                         print("DEBUG: could not parse \(elementName) from \(currentKV)")
                     }
                 case "colorProfile":
-                    if let colorProfile = ColorProfile.create(currentKV, id: id, description: description) {
-                        colorProfileById[colorProfile.id] = colorProfile
+                    if let colorProfile = ColorProfileFile.create(currentKV, id: id, description: description) {
+                        colorProfileFileById[colorProfile.id] = colorProfile
                     } else {
                         print("DEBUG: could not parse \(elementName) from \(currentKV)")
                     }
                 case "styleSheet":
-                    if let styleSheet = StyleSheet.create(currentKV, id: id, description: description) {
-                        styleSheetById[styleSheet.id] = styleSheet
+                    if let styleSheet = StyleSheetFile.create(currentKV, id: id, description: description) {
+                        styleSheetFileById[styleSheet.id] = styleSheet
                     } else {
                         print("DEBUG: could not parse \(elementName) from \(currentKV)")
                     }

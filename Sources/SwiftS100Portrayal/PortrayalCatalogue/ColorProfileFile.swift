@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct StyleSheet {
+struct ColorProfileFile {
     
     let id: String
     let description: Description
@@ -13,7 +13,7 @@ struct StyleSheet {
     let fileType: String
     let fileFormat: String
     
-    static func create(_ kv: [String: String], id: String, description: Description) -> StyleSheet? {
+    static func create(_ kv: [String: String], id: String, description: Description) -> ColorProfileFile? {
         guard let fileName = kv["fileName"] else {
             return nil
         }
@@ -23,7 +23,11 @@ struct StyleSheet {
         guard let fileFormat = kv["fileFormat"] else {
             return nil
         }
-        return StyleSheet(id: id, description: description, fileName: fileName, fileType: fileType, fileFormat: fileFormat)
+        return ColorProfileFile(id: id, description: description, fileName: fileName, fileType: fileType, fileFormat: fileFormat)
+    }
+    
+    func fileNameWithoutSuffix() -> String {
+        return String(fileName.split(separator: ".")[0])
     }
 
 }

@@ -10,42 +10,33 @@ import Foundation
 import FoundationXML
 #endif
 
-class LineStyleParser: NSObject, XMLParserDelegate {
+class SVGParser: NSObject, XMLParserDelegate {
     
-    private let lineStyleName: String
-    private var intervalLength: Double?
-    private var pen: Pen?
-    private var dashs: [Dash] = []
-    private var symbols: [LineSymbol] = []
+    private var shapes: [SVGShape] = []
     
     private var elementStack: [Element] = []
     private var currentElementValue = ""
     private var elementLevel = 0
     
-    private init(lineStyleName: String) {
-        self.lineStyleName = lineStyleName
+    override private init() {
     }
     
-    static func parse(bundle: Bundle, portrayalCataloguePath: String, lineStyleFile: LineStyleFile) -> LineStyle? {
+    static func parse(bundle: Bundle, portrayalCataloguePath: String, symbolFile: SymbolFile) -> SVG? {
         
-        guard let lineStyleXMLURL = bundle.url(forResource: "\(portrayalCataloguePath)/LineStyles/\(lineStyleFile.fileNameWithoutSuffix())", withExtension: "xml") else {
+        guard let symbolSVGURL = bundle.url(forResource: "\(portrayalCataloguePath)/Symbols/\(symbolFile.fileNameWithoutSuffix())", withExtension: "svg") else {
             return nil
         }
         
         do {
-            let data = try Data.init(contentsOf: lineStyleXMLURL)
+            let data = try Data.init(contentsOf: symbolSVGURL)
             
-            let parser = LineStyleParser(lineStyleName: lineStyleFile.id)
+            let parser = SVGParser()
             
             let xmlParser = XMLParser(data: data)
             xmlParser.delegate = parser
             xmlParser.parse()
             
-            guard let intervalLength = parser.intervalLength, let pen = parser.pen else {
-                return nil
-            }
-            
-            return LineStyle(name: lineStyleFile.id, intervalLength: intervalLength, pen: pen, dashs: parser.dashs, symbols: parser.symbols)
+            return SVG(name: symbolFile.id, shapes: parser.shapes)
         } catch {
             return nil
         }
@@ -74,26 +65,30 @@ class LineStyleParser: NSObject, XMLParserDelegate {
     
     func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
         
+        if elementLevel == 1 {
+            switch (elementName) {
+                // do we need some svg header values?
+            default:
+                break
+            }
+        }
+        
         if elementLevel == 2 {
             switch (elementName) {
-            case "intervalLength":
-                if let intervalLength = Double(currentElementValue) {
-                    self.intervalLength = intervalLength
-                }
-            case "pen":
+            case "rect":
                 let element = elementStack[elementLevel]
-                if let pen = Pen.create(element) {
-                    self.pen = pen
+                if let rect = SVGRect.create(element.attributeByKey) {
+                    shapes.append(rect)
                 }
-            case "dash":
+            case "circle":
                 let element = elementStack[elementLevel]
-                if let dash = Dash.create(element) {
-                    self.dashs.append(dash)
+                if let circle = SVGCircle.create(element.attributeByKey) {
+                    shapes.append(circle)
                 }
-            case "symbol":
+            case "path":
                 let element = elementStack[elementLevel]
-                if let symbol = LineSymbol.create(element) {
-                    self.symbols.append(symbol)
+                if let path = SVGPath.create(element.attributeByKey) {
+                    shapes.append(path)
                 }
             default:
                 break
@@ -105,5 +100,6 @@ class LineStyleParser: NSObject, XMLParserDelegate {
         let parentElement = elementStack[elementLevel]
         parentElement.append(elementName, String(currentElementValue))
     }
+
     
 }

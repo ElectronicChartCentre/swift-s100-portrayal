@@ -24,6 +24,7 @@ struct DrawingCommandCreator: Sendable {
         registry["LineStyle"] = LineStyleCommand.handle(state:args:)
 
         // drawing commands
+        registry["PointInstruction"] = PointInstruction.init(state:args:)
         registry["LineInstruction"] = LineInstruction.init(state:args:)
         registry["ColorFill"] = ColorFill.init(state:args:)
         

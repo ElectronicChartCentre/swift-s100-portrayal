@@ -18,18 +18,20 @@ struct PortrayalCatalogueParserTests {
 
         #expect(pc.areaFillById.count == 25)
         #expect(pc.ruleFileById.count == 215)
-        #expect(pc.symbolById.count == 718)
+        #expect(pc.symbolFileById.count == 718)
         // TODO: handle compositeLineStyle
         #expect(pc.lineStyleByName.count == 57)
-        #expect(pc.colorProfileById.count == 1)
-        #expect(pc.styleSheetById.count == 3)
+        #expect(pc.colorProfileFileById.count == 1)
+        #expect(pc.styleSheetFileById.count == 3)
         #expect(pc.viewingGroupById.count == 133)
 
         #expect(pc.colorPaletteByName.count == 3)
         for palette in pc.colorPaletteByName.values {
             #expect(palette.itemByToken.count == 67)
+            #expect(palette.css.entriesByClassSelector.count == 140)
         }
         
+        #expect(pc.symbolSVGByName.count == 718)
     }
     
     @Test func parseS124PortrayalCatalogue() async throws {
@@ -41,17 +43,21 @@ struct PortrayalCatalogueParserTests {
         
         #expect(pc.areaFillById.count == 1)
         #expect(pc.ruleFileById.count == 9)
-        #expect(pc.symbolById.count == 5)
+        #expect(pc.symbolFileById.count == 5)
         #expect(pc.lineStyleByName.count == 2)
-        #expect(pc.colorProfileById.count == 1)
-        #expect(pc.styleSheetById.count == 3)
+        #expect(pc.colorProfileFileById.count == 1)
+        #expect(pc.styleSheetFileById.count == 3)
         #expect(pc.viewingGroupById.count == 3)
         
         #expect(pc.colorPaletteByName.count == 3)
         for palette in pc.colorPaletteByName.values {
             #expect(palette.itemByToken.count == 69)
+            #expect(palette.css.entriesByClassSelector.count >= 142)
+            #expect(palette.css.entriesByClassSelector.count <= 144)
         }
 
+        #expect(pc.symbolSVGByName.count == 5)
+        
     }
 
 }

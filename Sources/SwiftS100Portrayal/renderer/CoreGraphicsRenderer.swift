@@ -87,6 +87,8 @@ public struct CoreGraphicsRenderer: Renderer {
             add(geometry: geometry, colorFill: colorFill)
         } else if let lineInstruction = drawingCommand as? LineInstruction {
             add(geometry: geometry, lineInstruction: lineInstruction)
+        } else if let pointInstruction = drawingCommand as? PointInstruction {
+            add(geometry: geometry, pointInstruction: pointInstruction)
         } else {
             print("TODO: handle \(drawingCommand)")
         }
@@ -172,6 +174,28 @@ public struct CoreGraphicsRenderer: Renderer {
         strokePath(geometryXY)
         
         context.restoreGState()
+    }
+    
+    private func add(geometry: Geometry, pointInstruction: PointInstruction) {
+        guard let svg = portrayalCatalogue.symbolSVGByName[pointInstruction.symbol] else {
+            return
+        }
+        
+        let geometryXY = projection.forward(geometry: geometry)
+        
+        guard let pointXY = geometryXY as? Point else {
+            print("DEBUG: PointInstruction with non-point geometry.")
+            return
+        }
+
+        context.saveGState()
+        
+        context.translateBy(x: pointXY.coordinate.x, y: pointXY.coordinate.y)
+        
+        svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
+        
+        context.restoreGState()
+        
     }
     
     private func strokePath(_ geometryXY: Geometry) {

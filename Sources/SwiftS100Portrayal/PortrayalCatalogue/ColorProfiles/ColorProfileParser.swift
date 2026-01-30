@@ -12,13 +12,21 @@ import FoundationXML
 
 class ColorProfileParser: NSObject, XMLParserDelegate {
     
+    private let bundle: Bundle
+    private let portrayalCataloguePath: String
+    
     private var colorPaletteByName: [String: ColorPalette] = [:]
     
     private var elementStack: [Element] = []
     private var currentElementValue = ""
     private var elementLevel = 0
     
-    static func parse(bundle: Bundle, portrayalCataloguePath: String, colorProfile: ColorProfile) -> [String: ColorPalette]? {
+    init(bundle: Bundle, portrayalCataloguePath: String) {
+        self.bundle = bundle
+        self.portrayalCataloguePath = portrayalCataloguePath
+    }
+    
+    static func parse(bundle: Bundle, portrayalCataloguePath: String, colorProfile: ColorProfileFile) -> [String: ColorPalette]? {
         
         guard let colorProfileXMLURL = bundle.url(forResource: "\(portrayalCataloguePath)/ColorProfiles/\(colorProfile.fileNameWithoutSuffix())", withExtension: "xml") else {
             return nil
@@ -27,7 +35,7 @@ class ColorProfileParser: NSObject, XMLParserDelegate {
         do {
             let data = try Data.init(contentsOf: colorProfileXMLURL)
             
-            let parser = ColorProfileParser()
+            let parser = ColorProfileParser(bundle: bundle, portrayalCataloguePath: portrayalCataloguePath)
             
             let xmlParser = XMLParser(data: data)
             xmlParser.delegate = parser
@@ -66,7 +74,7 @@ class ColorProfileParser: NSObject, XMLParserDelegate {
             let element = elementStack[elementLevel]
             switch (elementName) {
             case "palette":
-                if let palette = ColorPalette.create(element) {
+                if let palette = ColorPalette.create(element, bundle: bundle, portrayalCataloguePath: portrayalCataloguePath) {
                     colorPaletteByName[palette.name] = palette
                 }
             default:

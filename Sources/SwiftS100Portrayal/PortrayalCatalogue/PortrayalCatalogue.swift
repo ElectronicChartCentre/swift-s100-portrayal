@@ -12,12 +12,13 @@ public struct PortrayalCatalogue {
     
     let areaFillById: [String: AreaFill]
     let ruleFileById: [String: RuleFile]
-    let symbolById: [String: Symbol]
+    let symbolFileById: [String: SymbolFile]
     let lineStyleByName: [String: LineStyle]
-    let colorProfileById: [String: ColorProfile]
-    let styleSheetById: [String: StyleSheet]
+    let colorProfileFileById: [String: ColorProfileFile]
+    let styleSheetFileById: [String: StyleSheetFile]
     let viewingGroupById: [String: ViewingGroup]
 
     public let colorPaletteByName: [String: ColorPalette]
+    public let symbolSVGByName: [String: SVG]
     
 }

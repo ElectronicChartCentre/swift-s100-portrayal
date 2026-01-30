@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct ColorProfile {
+struct SymbolFile {
     
     let id: String
     let description: Description
@@ -13,7 +13,7 @@ struct ColorProfile {
     let fileType: String
     let fileFormat: String
     
-    static func create(_ kv: [String: String], id: String, description: Description) -> ColorProfile? {
+    static func create(_ kv: [String: String], id: String, description: Description) -> SymbolFile? {
         guard let fileName = kv["fileName"] else {
             return nil
         }
@@ -23,11 +23,11 @@ struct ColorProfile {
         guard let fileFormat = kv["fileFormat"] else {
             return nil
         }
-        return ColorProfile(id: id, description: description, fileName: fileName, fileType: fileType, fileFormat: fileFormat)
+        return SymbolFile(id: id, description: description, fileName: fileName, fileType: fileType, fileFormat: fileFormat)
     }
     
     func fileNameWithoutSuffix() -> String {
         return String(fileName.split(separator: ".")[0])
     }
-
+    
 }

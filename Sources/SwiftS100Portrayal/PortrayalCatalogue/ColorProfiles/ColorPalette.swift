@@ -8,14 +8,15 @@ import Foundation
 public struct ColorPalette {
     
     public let name: String
-    public let css: String
+    public let cssFileName: String
     public let itemByToken: [String: ColorItem]
+    public let css: CSS
     
-    static func create(_ e: Element) -> ColorPalette? {
+    static func create(_ e: Element, bundle: Bundle, portrayalCataloguePath: String) -> ColorPalette? {
         guard let name = e.attributeByKey["name"] else {
             return nil
         }
-        guard let css = e.attributeByKey["css"] else {
+        guard let cssFileName = e.attributeByKey["css"] else {
             return nil
         }
         
@@ -26,7 +27,11 @@ public struct ColorPalette {
             }
         }
         
-        return ColorPalette(name: name, css: css, itemByToken: itemByToken)
+        guard let css = CSSParser.parse(bundle: bundle, portrayalCataloguePath: portrayalCataloguePath, cssFileName: cssFileName) else {
+            return nil
+        }
+        
+        return ColorPalette(name: name, cssFileName: cssFileName, itemByToken: itemByToken, css: css)
     }
     
 }
