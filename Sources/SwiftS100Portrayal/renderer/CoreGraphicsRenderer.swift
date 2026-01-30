@@ -183,18 +183,21 @@ public struct CoreGraphicsRenderer: Renderer {
         
         let geometryXY = projection.forward(geometry: geometry)
         
-        guard let pointXY = geometryXY as? Point else {
-            print("DEBUG: PointInstruction with non-point geometry.")
-            return
+        if let pointXY = geometryXY as? Point {
+            context.saveGState()
+            context.translateBy(x: pointXY.coordinate.x, y: pointXY.coordinate.y)
+            svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
+            context.restoreGState()
+        } else if let multiPointXY = geometryXY as? MultiPoint {
+            for coordinateXY in multiPointXY.coordinates() {
+                context.saveGState()
+                context.translateBy(x: coordinateXY.x, y: coordinateXY.y)
+                svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
+                context.restoreGState()
+            }
+        } else {
+            // print("DEBUG: PointInstruction with non-point geometry")
         }
-
-        context.saveGState()
-        
-        context.translateBy(x: pointXY.coordinate.x, y: pointXY.coordinate.y)
-        
-        svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
-        
-        context.restoreGState()
         
     }
     
@@ -209,7 +212,7 @@ public struct CoreGraphicsRenderer: Renderer {
         } else if let _ = geometryXY as? Point {
             // ignore
         } else if let multiGeometryXY = geometryXY as? MultiGeometry {
-            for subGeometryXY in multiGeometryXY.geometries {
+            for subGeometryXY in multiGeometryXY.geometries() {
                 strokePath(subGeometryXY)
             }
         } else {

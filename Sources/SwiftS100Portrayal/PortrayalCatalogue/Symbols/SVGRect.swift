@@ -29,16 +29,26 @@ public struct SVGRect: SVGShape {
     
     public func draw(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette) {
         
-        if classParts.contains("pivotPoint") || classParts.contains("layout") {
-            return
-        }
-        
         context.saveGState()
         
         let xpx = screenResolution.pixels(mm: x)
         let ypx = screenResolution.pixels(mm: -y)
         let wpx = screenResolution.pixels(mm: width)
         let hpx = screenResolution.pixels(mm: height)
+
+        var doFill = false
+        for classPart in classParts {
+            for e in colorPalette.css.entriesByClassSelector[classPart] ?? [] {
+                if let _ = e as? CSS.DisplayNone {
+                    context.restoreGState()
+                    return
+                }
+                if let fill = e as? CSS.Fill, fill.color != nil {
+                    doFill = true
+                }
+                e.ececute(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
+            }
+        }
 
         let path = CGMutablePath()
         path.move(to: CGPoint(x: xpx, y: ypx))
@@ -49,18 +59,13 @@ public struct SVGRect: SVGShape {
         
         if let strokeWidth = strokeWidth {
             context.setLineWidth(screenResolution.pixels(mm: strokeWidth))
-        } else {
-            // TODO: look in css as well?
-            context.setLineWidth(screenResolution.pixels(mm: 0.5))
         }
-        
-        // TODO: color from something?
-        context.setStrokeColor(CGColor(red: 1, green: 0, blue: 0, alpha: 1))
 
         context.addPath(path)
         context.strokePath()
-        
-        // TODO: handle fill?
+        if doFill {
+            context.fillPath()
+        }
         
         context.restoreGState()
     }

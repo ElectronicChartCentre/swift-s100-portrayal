@@ -5,6 +5,14 @@
 
 import Foundation
 
+import SwiftGeo
+
+#if canImport(CoreGraphics)
+import CoreGraphics
+#elseif canImport(Silica)
+import Silica
+#endif
+
 public struct CSS {
     
     let entriesByClassSelector: [String: [Entry]]
@@ -25,9 +33,16 @@ public struct CSS {
                 return Stroke(color: color)
             }
         case "fill":
+            if v == "none" {
+                return Fill(color: nil)
+            }
             if let color = Color.create(v) {
                 return Fill(color: color)
             }
+        case "stroke-linejoin":
+            return StrokeLineJoin(value: v)
+        case "stroke-linecap":
+            return StrokeLineCap(value: v)
         default:
             break
         }
@@ -38,9 +53,14 @@ public struct CSS {
     
     public protocol Entry {
         
+        func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette)
+        
     }
     
     public struct DisplayNone: Entry {
+        
+        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette) {
+        }
         
     }
     
@@ -48,20 +68,53 @@ public struct CSS {
         
         public let value: Double
         
+        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette) {
+            context.setLineWidth(screenResolution.pixels(mm: value))
+        }
+        
     }
     
     public struct Stroke: Entry {
         
         public let color: Color
         
+        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette) {
+            context.setStrokeColor(red: Double(color.r) / 255.0, green: Double(color.g) / 255.0, blue: Double(color.b) / 255.0, alpha: 1.0)
+        }
+        
     }
     
     public struct Fill: Entry {
         
-        public let color: Color
+        public let color: Color?
+        
+        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette) {
+            
+            if let color = color {
+                context.setFillColor(red: Double(color.r) / 255.0, green: Double(color.g) / 255.0, blue: Double(color.b) / 255.0, alpha: 1.0)
+            }
+
+        }
+        
+    }
+    
+    public struct StrokeLineJoin: Entry {
+        
+        public let value: String
+        
+        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette) {
+        }
         
     }
 
+    public struct StrokeLineCap: Entry {
+        
+        public let value: String
+        
+        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette) {
+        }
+        
+    }
     
     public struct Color {
         
@@ -78,6 +131,9 @@ public struct CSS {
             }
             if def == "blue" {
                 return Color(r: 0, g: 0, b: 255)
+            }
+            if def == "black" {
+                return Color(r: 0, g: 0, b: 0)
             }
 
             if def.hasPrefix("#"), def.count == 7 {

@@ -30,32 +30,37 @@ public struct SVGCircle: SVGShape {
     
     public func draw(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette) {
         
-        if classParts.contains("pivotPoint") || classParts.contains("layout") {
-            return
-        }
-        
         context.saveGState()
         
         let cxpx = screenResolution.pixels(mm: cx)
         let cypx = screenResolution.pixels(mm: -cy)
         let rpx = screenResolution.pixels(mm: r)
         
-        if let strokeWidth = strokeWidth {
-            context.setLineWidth(screenResolution.pixels(mm: strokeWidth))
-        } else {
-            // TODO: look in css as well?
-            context.setLineWidth(screenResolution.pixels(mm: 0.5))
+        var doFill = false
+        for classPart in classParts {
+            for e in colorPalette.css.entriesByClassSelector[classPart] ?? [] {
+                if let _ = e as? CSS.DisplayNone {
+                    context.restoreGState()
+                    return
+                }
+                if let fill = e as? CSS.Fill, fill.color != nil {
+                    doFill = true
+                }
+                e.ececute(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
+            }
         }
         
-        // TODO: color from something?
-        context.setStrokeColor(CGColor(red: 1, green: 0, blue: 0, alpha: 1))
+        if let strokeWidth = strokeWidth {
+            context.setLineWidth(screenResolution.pixels(mm: strokeWidth))
+        }
 
         let rect = CGRect(x: cxpx - rpx, y: cypx - rpx, width: 2.0 * rpx, height: 2.0 * rpx)
         context.addEllipse(in: rect)
 
         context.strokePath()
-        
-        // TODO: handle fill?
+        if doFill {
+            context.fillPath()
+        }
 
         context.restoreGState()
     }
