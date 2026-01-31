@@ -57,9 +57,10 @@ public struct SVGCircle: SVGShape {
         let rect = CGRect(x: cxpx - rpx, y: cypx - rpx, width: 2.0 * rpx, height: 2.0 * rpx)
         context.addEllipse(in: rect)
 
-        context.strokePath()
         if doFill {
-            context.fillPath()
+            context.drawPath(using: .fillStroke)
+        } else {
+            context.drawPath(using: .stroke)
         }
 
         context.restoreGState()

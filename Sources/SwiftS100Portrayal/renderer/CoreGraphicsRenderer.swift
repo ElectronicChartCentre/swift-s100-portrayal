@@ -37,6 +37,9 @@ public struct CoreGraphicsRenderer: Renderer {
     private let screenResolution: ScreenResolution
     private let portrayalCatalogue: PortrayalCatalogue
     
+    private let largeBoundingBoxPixel: BoundingBox
+    private let largeBoundingBoxWorld: BoundingBox
+    
     public init(context: CGContext, widthPoint: Int, heightPoint: Int, pixelsPrPoint: Int, projection: Projection, colorPalette: ColorPalette, screenResolution: ScreenResolution, portrayalCatalogue: PortrayalCatalogue) {
         self.context = context
         self.widthPoint = widthPoint
@@ -48,6 +51,9 @@ public struct CoreGraphicsRenderer: Renderer {
         self.colorPalette = colorPalette
         self.screenResolution = screenResolution
         self.portrayalCatalogue = portrayalCatalogue
+        
+        self.largeBoundingBoxPixel = DefaultBoundingBox(minX: 0, maxX: Double(widthPixel), minY: 0, maxY: Double(heightPixel)).grow(factor: 1.5)
+        self.largeBoundingBoxWorld = self.largeBoundingBoxPixel.transform( self.projection.inverse)
     }
     
     public init?(widthPoint: Int, heightPoint: Int, pixelsPrPoint: Int, projection: Projection, colorPalette: ColorPalette, screenResolution: ScreenResolution, portrayalCatalogue: PortrayalCatalogue) {
@@ -61,6 +67,9 @@ public struct CoreGraphicsRenderer: Renderer {
         self.colorPalette = colorPalette
         self.screenResolution = screenResolution
         self.portrayalCatalogue = portrayalCatalogue
+        
+        self.largeBoundingBoxPixel = DefaultBoundingBox(minX: 0, maxX: Double(widthPixel), minY: 0, maxY: Double(heightPixel)).grow(factor: 1.5)
+        self.largeBoundingBoxWorld = self.largeBoundingBoxPixel.transform( self.projection.inverse)
 
         let bitsPerComponent = 8
         let bytesPerPixel = 4 // RGBA
@@ -143,7 +152,6 @@ public struct CoreGraphicsRenderer: Renderer {
             context.setStrokeColor(CGColor(red: 1.0, green: 0, blue: 0, alpha: 0.5))
         }
 
-        // TODO: does not look very good..
         if !lineStyle.dashs.isEmpty {
             var dashPhase: CGFloat = 0.0
             var dashLengths: [CGFloat] = []
@@ -186,10 +194,25 @@ public struct CoreGraphicsRenderer: Renderer {
         if let pointXY = geometryXY as? Point {
             context.saveGState()
             context.translateBy(x: pointXY.coordinate.x, y: pointXY.coordinate.y)
+            
+            if let rotationCRS = pointInstruction.rotationCRS, let rotation = pointInstruction.rotation {
+                if rotationCRS == RotationCommand.RotationCRS.GeographicCRS.rawValue {
+                    // TODO: calculate screen rotation using projection
+                    context.rotate(by: rotation * .pi / 180.0)
+                } else {
+                    context.rotate(by: rotation * .pi / 180.0)
+                }
+            }
+            
             svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
             context.restoreGState()
         } else if let multiPointXY = geometryXY as? MultiPoint {
             for coordinateXY in multiPointXY.coordinates() {
+                
+                if !largeBoundingBoxPixel.intersects(coordinateXY) {
+                    continue
+                }
+                
                 context.saveGState()
                 context.translateBy(x: coordinateXY.x, y: coordinateXY.y)
                 svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)

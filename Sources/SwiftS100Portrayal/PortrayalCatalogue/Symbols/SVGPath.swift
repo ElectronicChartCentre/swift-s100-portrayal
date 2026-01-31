@@ -53,9 +53,10 @@ struct SVGPath: SVGShape {
         }
         context.addPath(path)
         
-        context.strokePath()
         if doFill {
-            context.fillPath()
+            context.drawPath(using: .fillStroke)
+        } else {
+            context.drawPath(using: .stroke)
         }
         
         context.restoreGState()

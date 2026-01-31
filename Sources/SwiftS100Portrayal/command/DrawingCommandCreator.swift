@@ -18,6 +18,19 @@ struct DrawingCommandCreator: Sendable {
         registry["ViewingGroup"] = ViewingGroupCommand.handle(state:args:)
         registry["DisplayPlane"] = DisplayPlane.handle(state:args:)
         registry["DrawingPriority"] = DrawingPriorityCommand.handle(state:args:)
+        registry["ScaleMinimum"] = ScaleMinimumCommand.handle(state:args:)
+        registry["ScaleMaximum"] = ScaleMaximumCommand.handle(state:args:)
+        registry["Id"] = IdCommand.handle(state:args:)
+        registry["Parent"] = ParentCommand.handle(state:args:)
+        registry["Hover"] = HoverCommand.handle(state:args:)
+        
+        // transform
+        registry["LocalOffset"] = LocalOffsetCommand.handle(state:args:)
+        registry["LinePlacement"] = LinePlacementCommand.handle(state:args:)
+        registry["AreaPlacement"] = AreaPlacementCommand.handle(state:args:)
+        registry["AreaCRS"] = AreaCRSCommand.handle(state:args:)
+        registry["Rotation"] = RotationCommand.handle(state:args:)
+        registry["ScaleFactor"] = ScaleFactorCommand.handle(state:args:)
 
         // line style
         registry["Dash"] = DashCommand.handle(state:args:)
