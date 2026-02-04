@@ -41,7 +41,7 @@ struct AugmentedPoint: GeometryCommand, HasGeometry {
         }
         
         if crs != "GeographicCRS" {
-            print("TODO: implement \(self.self) for args: \(args)")
+            print("TODO: implement \(self.self) for \(crs)")
         }
         
         let augmentedPoint = AugmentedPoint(crs: crs, x: x, y: y)
