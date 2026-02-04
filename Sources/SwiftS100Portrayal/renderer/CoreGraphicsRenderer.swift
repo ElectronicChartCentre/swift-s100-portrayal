@@ -228,49 +228,25 @@ public struct CoreGraphicsRenderer: Renderer {
                 svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
                 context.restoreGState()
             }
-        } else if let lineStringXY = geometryXY as? LineString {
-            let lineStringWalkerXY = LineStringWalker(lineString: lineStringXY)
-            guard let coordinateXY = lineStringWalkerXY.coordinate2DAtFactor(factor: 0.5, creator: geometryCreator) else {
-                return
-            }
-            
-            context.saveGState()
-            context.translateBy(x: coordinateXY.x, y: coordinateXY.y)
-            
-            if let rotationCRS = pointInstruction.rotationCRS, let rotation = pointInstruction.rotation {
-                if rotationCRS == RotationCommand.RotationCRS.GeographicCRS.rawValue {
-                    // TODO: calculate screen rotation using projection
-                    context.rotate(by: rotation * .pi / 180.0)
-                } else {
-                    context.rotate(by: rotation * .pi / 180.0)
-                }
-            }
-            
-            svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
-            context.restoreGState()
-        } else if let polygonXY = geometryXY as? Polygon {
-            // all rings?
-            let lineStringWalkerXY = LineStringWalker(linearRing: polygonXY.shell)
-            guard let coordinateXY = lineStringWalkerXY.coordinate2DAtFactor(factor: 0.5, creator: geometryCreator) else {
-                return
-            }
-            
-            context.saveGState()
-            context.translateBy(x: coordinateXY.x, y: coordinateXY.y)
-            
-            if let rotationCRS = pointInstruction.rotationCRS, let rotation = pointInstruction.rotation {
-                if rotationCRS == RotationCommand.RotationCRS.GeographicCRS.rawValue {
-                    // TODO: calculate screen rotation using projection
-                    context.rotate(by: rotation * .pi / 180.0)
-                } else {
-                    context.rotate(by: rotation * .pi / 180.0)
-                }
-            }
-            
-            svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
-            context.restoreGState()
         } else {
-            print("DEBUG: unsupported PointInstruction type. \(geometryXY)")
+            guard let coordinateXY = CenterFinder.centerCoordinate2D(geometry: geometryXY, creator: geometryCreator) else {
+                return
+            }
+            
+            context.saveGState()
+            context.translateBy(x: coordinateXY.x, y: coordinateXY.y)
+            
+            if let rotationCRS = pointInstruction.rotationCRS, let rotation = pointInstruction.rotation {
+                if rotationCRS == RotationCommand.RotationCRS.GeographicCRS.rawValue {
+                    // TODO: calculate screen rotation using projection
+                    context.rotate(by: rotation * .pi / 180.0)
+                } else {
+                    context.rotate(by: rotation * .pi / 180.0)
+                }
+            }
+            
+            svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
+            context.restoreGState()
         }
         
     }
