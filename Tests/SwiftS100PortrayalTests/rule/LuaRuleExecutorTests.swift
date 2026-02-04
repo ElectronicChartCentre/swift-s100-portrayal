@@ -114,7 +114,11 @@ struct LuaRuleExecutorTests {
                 return
             }
             
-            let geometry = feature.createGeometry(dsf: dsf, creator: geometryCreator)
+            var geometry = feature.createGeometry(dsf: dsf, creator: geometryCreator)
+            
+            if let drawingCommandGeometry = featureDrawingCommand.drawingCommand.geometryState.geometry(dsf: dsf, geometry: geometry, geometryCreator: geometryCreator, renderer: renderer) {
+                geometry = drawingCommandGeometry
+            }
             
             renderer.add(geometry: geometry, drawingCommand: featureDrawingCommand.drawingCommand)
         }

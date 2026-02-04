@@ -7,6 +7,7 @@ import Foundation
 
 class PortrayalState {
     
+    let geometryState = GeometryState()
     let lineStyleState = LineStyleState()
     var lineStyles: [LineStyle] = []
     let visibilityState = VisibilityState()

@@ -5,11 +5,12 @@
 
 import Foundation
 
-struct AreaPlacementCommand: TransformCommand {
+struct AlertReference: StateCommand {
     
     static func handle(state: PortrayalState, args: [String]) -> DrawingCommand? {
-        print("TODO: implement \(self.self) for args: \(args)")
+        // not doing anythings with alerts yet.
         return nil
     }
+
     
 }

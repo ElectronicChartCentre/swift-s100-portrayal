@@ -8,7 +8,8 @@ import Foundation
 public struct LineInstruction: DrawingCommand {
     
     public let visibilityState: VisibilityState.Record
-    
+    public let geometryState: GeometryState.Record
+
     public let instructionTypePriority = 80
     
     private let lineStylesFromState: [LineStyle]
@@ -18,7 +19,8 @@ public struct LineInstruction: DrawingCommand {
     init(state: PortrayalState, args: [String]) {
         visibilityState = state.visibilityState.toRecord()
         lineStylesFromState = state.lineStyles
-        
+        geometryState = state.geometryState.toRecord()
+
         var byName: [String: LineStyle] = [:]
         for lineStyle in lineStylesFromState {
             byName[lineStyle.name] = lineStyle

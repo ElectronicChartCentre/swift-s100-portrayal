@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct AreaPlacementCommand: TransformCommand {
+struct Arc3Points: GeometryCommand {
     
     static func handle(state: PortrayalState, args: [String]) -> DrawingCommand? {
         print("TODO: implement \(self.self) for args: \(args)")

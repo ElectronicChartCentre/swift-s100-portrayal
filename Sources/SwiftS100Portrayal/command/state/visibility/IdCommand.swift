@@ -8,7 +8,7 @@ import Foundation
 struct IdCommand: VisibilityStateCommand {
     
     static func handle(state: PortrayalState, args: [String]) -> DrawingCommand? {
-        print("TODO: implement Id")
+        print("TODO: implement \(self.self) for args: \(args)")
         return nil
     }
     

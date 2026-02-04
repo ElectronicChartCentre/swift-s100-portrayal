@@ -8,7 +8,7 @@ import Foundation
 struct LocalOffsetCommand: TransformCommand {
     
     static func handle(state: PortrayalState, args: [String]) -> DrawingCommand? {
-        print("TODO: implement LocalOffset")
+        print("TODO: implement \(self.self) for args: \(args)")
         return nil
     }
     

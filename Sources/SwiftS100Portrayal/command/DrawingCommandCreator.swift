@@ -36,6 +36,20 @@ struct DrawingCommandCreator: Sendable {
         registry["Dash"] = DashCommand.handle(state:args:)
         registry["LineStyle"] = LineStyleCommand.handle(state:args:)
 
+        // geometry
+        registry["SpatialReference"] = SpatialReference.handle(state:args:)
+        registry["AugmentedPoint"] = AugmentedPoint.handle(state:args:)
+        registry["AugmentedRay"] = AugmentedRay.handle(state:args:)
+        registry["AugmentedPath"] = AugmentedPath.handle(state:args:)
+        registry["Polyline"] = Polyline.handle(state:args:)
+        registry["Arc3Points"] = Arc3Points.handle(state:args:)
+        registry["ArcByRadius"] = ArcByRadius.handle(state:args:)
+        registry["Annulus"] = Annulus.handle(state:args:)
+        registry["ClearGeometry"] = ClearGeometry.handle(state:args:)
+        
+        // alert
+        registry["AlertReference"] = AlertReference.handle(state:args:)
+
         // drawing commands
         registry["PointInstruction"] = PointInstruction.init(state:args:)
         registry["LineInstruction"] = LineInstruction.init(state:args:)
@@ -59,7 +73,7 @@ struct DrawingCommandCreator: Sendable {
                     drawingCommands.append(drawingCommand)
                 }
             } else {
-                print("TODO: unknown instruction: \(entry.key)")
+                print("TODO: unknown instruction: \(entry.key) for args: \(entry.arguments)")
             }
         }
         

@@ -6,6 +6,13 @@
 import Foundation
 
 struct ClearGeometry: GeometryCommand {
-    // TODO: implement
+
+    static func handle(state: PortrayalState, args: [String]) -> DrawingCommand? {
+        
+        state.geometryState.spatialReferences.removeAll()
+        state.geometryState.augmentedGeometry = nil
+        
+        return nil
+    }
 
 }

@@ -8,6 +8,7 @@ import Foundation
 public struct ColorFill: DrawingCommand {
     
     public let visibilityState: VisibilityState.Record
+    public let geometryState: GeometryState.Record
     
     public let instructionTypePriority = 50
     
@@ -15,7 +16,8 @@ public struct ColorFill: DrawingCommand {
     public let transparency: Double
     
     init(state: PortrayalState, args: [String]) {
-        self.visibilityState = state.visibilityState.toRecord()
+        visibilityState = state.visibilityState.toRecord()
+        geometryState = state.geometryState.toRecord()
         
         token = args[0]
         if args.count > 1 {

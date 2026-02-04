@@ -6,6 +6,5 @@
 import Foundation
 
 protocol GeometryCommand: StateCommand {
-    // TODO: implement
 
 }

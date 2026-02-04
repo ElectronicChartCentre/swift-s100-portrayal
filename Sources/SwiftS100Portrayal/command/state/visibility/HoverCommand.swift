@@ -8,7 +8,7 @@ import Foundation
 struct HoverCommand: VisibilityStateCommand {
     
     static func handle(state: PortrayalState, args: [String]) -> DrawingCommand? {
-        print("TODO: implement Hover")
+        // ignoring for now
         return nil
     }
     
