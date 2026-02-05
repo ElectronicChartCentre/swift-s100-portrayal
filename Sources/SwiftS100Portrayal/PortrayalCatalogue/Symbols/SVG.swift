@@ -15,6 +15,11 @@ import Silica
 
 public struct SVG {
     
+    public let width: Double
+    public let height: Double
+    
+    public let viewBox: SVGViewBox
+    
     public let name: String
     public let shapes: [SVGShape]
     

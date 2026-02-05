@@ -100,6 +100,8 @@ public struct CoreGraphicsRenderer: Renderer {
             add(geometry: geometry, lineInstruction: lineInstruction)
         } else if let pointInstruction = drawingCommand as? PointInstruction {
             add(geometry: geometry, pointInstruction: pointInstruction)
+        } else if let _ = drawingCommand as? NullInstruction {
+            // nothing to do
         } else {
             print("TODO: handle \(drawingCommand)")
         }
@@ -140,6 +142,15 @@ public struct CoreGraphicsRenderer: Renderer {
     }
     
     private func add(geometry: Geometry, lineInstruction: LineInstruction) {
+        
+        if let polygon = geometry as? SwiftGeo.Polygon {
+            add(geometry: polygon.shell, lineInstruction: lineInstruction)
+            for hole in polygon.holes {
+                add(geometry: hole, lineInstruction: lineInstruction)
+            }
+            return
+        }
+        
         guard let lineStyle = lineInstruction.lineStyles(portrayalCatalogue: portrayalCatalogue).first else {
             return
         }
@@ -153,11 +164,12 @@ public struct CoreGraphicsRenderer: Renderer {
         } else {
             context.setStrokeColor(CGColor(red: 1.0, green: 0, blue: 0, alpha: 0.5))
         }
-
+        
+        let intervalLengthPx = screenResolution.pixels(mm: lineStyle.intervalLength)
+        
         if !lineStyle.dashs.isEmpty {
             var dashPhase: CGFloat = 0.0
             var dashLengths: [CGFloat] = []
-            let intervalLengthPx = screenResolution.pixels(mm: lineStyle.intervalLength)
             for dash in lineStyle.dashs {
                 let dashStartPx = screenResolution.pixels(mm: dash.start)
                 if dashStartPx > intervalLengthPx {
@@ -184,6 +196,15 @@ public struct CoreGraphicsRenderer: Renderer {
         strokePath(geometryXY)
         
         context.restoreGState()
+        
+        if !lineStyle.symbols.isEmpty {
+            if let lineXY = geometryXY as? LinearGeometry {
+                placeSymbolsAlongLine(lineXY: lineXY, lineStyle: lineStyle)
+            } else {
+                print("TODO: line symbol in non-linear geometry. \(type(of: geometryXY))")
+            }
+        }
+
     }
     
     private func add(geometry: Geometry, pointInstruction: PointInstruction) {
@@ -252,13 +273,8 @@ public struct CoreGraphicsRenderer: Renderer {
     }
     
     private func strokePath(_ geometryXY: Geometry) {
-        if let polygonXY = geometryXY as? SwiftGeo.Polygon {
-            strokePath(polygonXY.shell.coordinates)
-            for hole in polygonXY.holes {
-                strokePath(hole.coordinates)
-            }
-        } else if let lineStringXY = geometryXY as? SwiftGeo.LineString {
-            strokePath(lineStringXY.coordinates)
+        if let lineXY = geometryXY as? LinearGeometry {
+            strokePath(lineXY.coordinates)
         } else if let _ = geometryXY as? Point {
             // ignore
         } else if let multiGeometryXY = geometryXY as? MultiGeometry {
@@ -280,6 +296,74 @@ public struct CoreGraphicsRenderer: Renderer {
             }
         }
         context.strokePath()
+    }
+    
+    private func placeSymbolsAlongLine(lineXY: LinearGeometry, lineStyle: LineStyle) {
+        
+        let intervalPx = screenResolution.pixels(mm: lineStyle.intervalLength)
+        
+        for lineSymbol in lineStyle.symbols {
+            
+            guard let svg = portrayalCatalogue.symbolSVGByName[lineSymbol.reference] else {
+                continue
+            }
+            
+            let symbolOffsetRelativeToViewBox = Vector2D(x: screenResolution.pixels(mm: svg.viewBox.x),
+                                                         y: screenResolution.pixels(mm: svg.viewBox.y))
+            
+            let symbolHalfWidthPx = screenResolution.pixels(mm: svg.width / 2.0)
+            var distanceToNextSymbolPx = screenResolution.pixels(mm: lineSymbol.position)
+            
+            for (i, segmentEndXY) in lineXY.coordinates.enumerated() {
+                if i == 0 {
+                    continue
+                }
+                
+                guard let segmentStartXY = lineXY.coordinate(at: i - 1) else {
+                    continue
+                }
+                
+                let segmentLengthPx = segmentStartXY.distance2D(to: segmentEndXY)
+                
+                if distanceToNextSymbolPx > segmentLengthPx {
+                    distanceToNextSymbolPx -= segmentLengthPx
+                    continue
+                }
+                
+                let unitAlongSegment = Vector2D.unit(from: segmentStartXY, to: segmentEndXY)
+                
+                repeat {
+                    
+                    var rotation = unitAlongSegment.direction()
+                    
+                    // adjust rotation if close to start or end of segment
+                    let distanceFromNextSegmentPx = segmentLengthPx - distanceToNextSymbolPx
+                    if distanceFromNextSegmentPx < symbolHalfWidthPx, let nextSegmentEndXY = lineXY.coordinate(at: i + 1) {
+                        let stepAlongNextSegment = Vector2D.unit(from: segmentEndXY, to: nextSegmentEndXY).scale(symbolHalfWidthPx - distanceFromNextSegmentPx)
+                        let bisector = stepAlongNextSegment.add(unitAlongSegment.scale(distanceFromNextSegmentPx + symbolHalfWidthPx))
+                        rotation = bisector.direction()
+                    } else if distanceToNextSymbolPx < symbolHalfWidthPx, let prevSegmentStartXY = lineXY.coordinate(at: i - 2) {
+                        let stepAlongPrevSegment = Vector2D.unit(from: prevSegmentStartXY, to: segmentStartXY).scale(symbolHalfWidthPx - distanceToNextSymbolPx)
+                        let bisector = stepAlongPrevSegment.add(unitAlongSegment.scale(distanceToNextSymbolPx + symbolHalfWidthPx))
+                        rotation = bisector.direction()
+                    }
+                    
+                    let translation = unitAlongSegment.scale(distanceToNextSymbolPx).add(segmentStartXY)
+                    
+                    context.saveGState()
+                    context.translateBy(x: translation.x, y: translation.y)
+                    context.rotate(by: rotation)
+                    context.translateBy(x: symbolOffsetRelativeToViewBox.x, y: symbolOffsetRelativeToViewBox.y)
+                    svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
+                    context.restoreGState()
+
+                    distanceToNextSymbolPx += intervalPx
+                    
+                } while distanceToNextSymbolPx < segmentLengthPx
+                
+                distanceToNextSymbolPx -= segmentLengthPx
+            }
+        }
     }
     
     private func cgcolor(_ token: String) -> CGColor? {

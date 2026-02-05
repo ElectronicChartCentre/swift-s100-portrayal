@@ -12,6 +12,9 @@ import FoundationXML
 
 class SVGParser: NSObject, XMLParserDelegate {
     
+    private var width: Double?
+    private var height: Double?
+    private var viewBox: SVGViewBox?
     private var shapes: [SVGShape] = []
     
     private var elementStack: [Element] = []
@@ -36,7 +39,17 @@ class SVGParser: NSObject, XMLParserDelegate {
             xmlParser.delegate = parser
             xmlParser.parse()
             
-            return SVG(name: symbolFile.id, shapes: parser.shapes)
+            guard let width = parser.width, let height = parser.height else {
+                print("ERROR: missing width and/or height in \(symbolFile.fileName)")
+                return nil
+            }
+            
+            guard let viewBox = parser.viewBox else {
+                print("ERROR: missing viewBox in \(symbolFile.fileName)")
+                return nil
+            }
+            
+            return SVG(width: width, height: height, viewBox: viewBox, name: symbolFile.id, shapes: parser.shapes)
         } catch {
             return nil
         }
@@ -67,7 +80,17 @@ class SVGParser: NSObject, XMLParserDelegate {
         
         if elementLevel == 1 {
             switch (elementName) {
-                // do we need some svg header values?
+            case "svg":
+                let element = elementStack[elementLevel - 1]
+                if let w = element.attributeByKey["width"]?.dropLast(2), let width = Double(w) {
+                    self.width = width
+                }
+                if let h = element.attributeByKey["height"]?.dropLast(2), let height = Double(h) {
+                    self.height = height
+                }
+                if let viewBox = SVGViewBox.create(element.attributeByKey["viewBox"]) {
+                    self.viewBox = viewBox
+                }
             default:
                 break
             }
