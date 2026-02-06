@@ -29,12 +29,16 @@ struct SVGPath: SVGShape {
         
         context.saveGState()
         
+        var doStroke = false
         var doFill = false
         for classPart in classParts {
             for e in colorPalette.css.entriesByClassSelector[classPart] ?? [] {
                 if let _ = e as? CSS.DisplayNone {
                     context.restoreGState()
                     return
+                }
+                if let stroke = e as? CSS.Stroke, stroke.color != nil {
+                    doStroke = true
                 }
                 if let fill = e as? CSS.Fill, fill.color != nil {
                     doFill = true
@@ -53,10 +57,12 @@ struct SVGPath: SVGShape {
         }
         context.addPath(path)
         
-        if doFill {
-            context.drawPath(using: .fillStroke)
-        } else {
+        if doStroke, doFill {
+            context.drawPath(using: .eoFillStroke)
+        } else if doStroke {
             context.drawPath(using: .stroke)
+        } else if doFill {
+            context.drawPath(using: .eoFill)
         }
         
         context.restoreGState()

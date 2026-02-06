@@ -36,12 +36,16 @@ public struct SVGCircle: SVGShape {
         let cypx = screenResolution.pixels(mm: -cy)
         let rpx = screenResolution.pixels(mm: r)
         
+        var doStroke = false
         var doFill = false
         for classPart in classParts {
             for e in colorPalette.css.entriesByClassSelector[classPart] ?? [] {
                 if let _ = e as? CSS.DisplayNone {
                     context.restoreGState()
                     return
+                }
+                if let stroke = e as? CSS.Stroke, stroke.color != nil {
+                    doStroke = true
                 }
                 if let fill = e as? CSS.Fill, fill.color != nil {
                     doFill = true
@@ -57,10 +61,12 @@ public struct SVGCircle: SVGShape {
         let rect = CGRect(x: cxpx - rpx, y: cypx - rpx, width: 2.0 * rpx, height: 2.0 * rpx)
         context.addEllipse(in: rect)
 
-        if doFill {
-            context.drawPath(using: .fillStroke)
-        } else {
+        if doStroke, doFill {
+            context.drawPath(using: .eoFillStroke)
+        } else if doStroke {
             context.drawPath(using: .stroke)
+        } else if doFill {
+            context.drawPath(using: .eoFill)
         }
 
         context.restoreGState()
