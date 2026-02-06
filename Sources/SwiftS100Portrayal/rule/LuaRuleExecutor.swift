@@ -26,11 +26,9 @@ public class LuaRuleExecutor {
         self.portrayalCatalogue = portrayalCatalogue
         self.featureCatalogue = featureCatalogue
         self.lua = LuaVM()
-        
-        if debug {
-            self.lua.debuggingEnabled = true
-        }
-        
+
+        self.lua.debuggingEnabled = debug
+
         setPath()
         loadPortrayalCatalogue()
         registerHostFunctions()
@@ -587,7 +585,14 @@ public class LuaRuleExecutor {
         
         var associatedFeatureIds: Set<String> = []
         for fasc in feature.fascs() {
-            // TODO: use associationCode and roleCode
+            
+            if fasc.facd != associationCode {
+                continue
+            }
+            
+            if fasc.arcd != roleCode {
+                continue
+            }
 
             if let _ = dsf.record(forIdentifier: fasc.referencedRecordIdentifier) as? InformationTypeRecord {
                 let associatedFeatureId = LuaRuleExecutor.createRecordId(dsf: dsf, recordIdentifier: fasc.referencedRecordIdentifier)
@@ -621,7 +626,14 @@ public class LuaRuleExecutor {
 
         var associatedInformationIds: Set<String> = []
         for inas in spatial.inass() {
-            // TODO: use associationCode and roleCode
+            
+            if inas.iacd != associationCode {
+                continue
+            }
+            
+            if inas.arcd != roleCode {
+                continue
+            }
 
             associatedInformationIds.insert(LuaRuleExecutor.createRecordId(dsf: dsf, recordIdentifier: inas.referencedRecordIdentifier))
         }
