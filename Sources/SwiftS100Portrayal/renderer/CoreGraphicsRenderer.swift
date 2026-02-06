@@ -143,10 +143,21 @@ public struct CoreGraphicsRenderer: Renderer {
     
     private func add(geometry: Geometry, lineInstruction: LineInstruction) {
         
+        if geometry is Point || geometry is MultiPoint {
+            return
+        }
+        
         if let polygon = geometry as? SwiftGeo.Polygon {
             add(geometry: polygon.shell, lineInstruction: lineInstruction)
             for hole in polygon.holes {
                 add(geometry: hole, lineInstruction: lineInstruction)
+            }
+            return
+        }
+        
+        if let multiGeometry = geometry as? MultiGeometry {
+            for subGeometry in multiGeometry.geometries() {
+                add(geometry: subGeometry, lineInstruction: lineInstruction)
             }
             return
         }
@@ -199,7 +210,7 @@ public struct CoreGraphicsRenderer: Renderer {
         
         if !lineStyle.symbols.isEmpty {
             if let lineXY = geometryXY as? LinearGeometry {
-                placeSymbolsAlongLine(lineXY: lineXY, lineStyle: lineStyle)
+                placeSymbolsAlongLine(lineXY: lineXY.removeDuplicatePoints(), lineStyle: lineStyle)
             } else {
                 print("TODO: line symbol in non-linear geometry. \(type(of: geometryXY))")
             }
@@ -286,7 +297,7 @@ public struct CoreGraphicsRenderer: Renderer {
         }
     }
     
-    private func strokePath(_ coordinates: [Coordinate]) {
+    private func strokePath(_ coordinates: [any Coordinate]) {
         for (idx, coordinate) in coordinates.enumerated() {
             let point = CGPoint(x: coordinate.x, y: coordinate.y)
             if idx == 0 {
@@ -319,7 +330,7 @@ public struct CoreGraphicsRenderer: Renderer {
                     continue
                 }
                 
-                guard let segmentStartXY = lineXY.coordinate(at: i - 1) else {
+                guard let segmentStartXY = lineXY.coordinate(index: i, skip: -1) else {
                     continue
                 }
                 
@@ -338,11 +349,11 @@ public struct CoreGraphicsRenderer: Renderer {
                     
                     // adjust rotation if close to start or end of segment
                     let distanceFromNextSegmentPx = segmentLengthPx - distanceToNextSymbolPx
-                    if distanceFromNextSegmentPx < symbolHalfWidthPx, let nextSegmentEndXY = lineXY.coordinate(at: i + 1) {
+                    if distanceFromNextSegmentPx < symbolHalfWidthPx, let nextSegmentEndXY = lineXY.coordinate(index: i, skip: 1) {
                         let stepAlongNextSegment = Vector2D.unit(from: segmentEndXY, to: nextSegmentEndXY).scale(symbolHalfWidthPx - distanceFromNextSegmentPx)
                         let bisector = stepAlongNextSegment.add(unitAlongSegment.scale(distanceFromNextSegmentPx + symbolHalfWidthPx))
                         rotation = bisector.direction()
-                    } else if distanceToNextSymbolPx < symbolHalfWidthPx, let prevSegmentStartXY = lineXY.coordinate(at: i - 2) {
+                    } else if distanceToNextSymbolPx < symbolHalfWidthPx, let prevSegmentStartXY = lineXY.coordinate(index: i, skip: 2) {
                         let stepAlongPrevSegment = Vector2D.unit(from: prevSegmentStartXY, to: segmentStartXY).scale(symbolHalfWidthPx - distanceToNextSymbolPx)
                         let bisector = stepAlongPrevSegment.add(unitAlongSegment.scale(distanceToNextSymbolPx + symbolHalfWidthPx))
                         rotation = bisector.direction()
