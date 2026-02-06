@@ -106,6 +106,10 @@ public class LuaRuleExecutor {
     }
     
     public func setUp(dsf: DataSetFile) {
+        setUp(dsf: dsf, overrideContextParameters: [:])
+    }
+    
+    public func setUp(dsf: DataSetFile, overrideContextParameters: [String: String]) {
         clearState()
         
         self.dsf = dsf
@@ -128,8 +132,15 @@ public class LuaRuleExecutor {
         
         var contextParameters: [any Value] = []
         for contextParameter in ContextParameters.defaultContextParameters().parameterByName.values {
-            if let cp = luaPortrayalCreateContextParameter(contextParameter) {
-                contextParameters.append(cp)
+            if let value = overrideContextParameters[contextParameter.name] {
+                let overrideCP = ContextParameter(name: contextParameter.name, type: contextParameter.type, value: value)
+                if let cp = luaPortrayalCreateContextParameter(overrideCP) {
+                    contextParameters.append(cp)
+                }
+            } else {
+                if let cp = luaPortrayalCreateContextParameter(contextParameter) {
+                    contextParameters.append(cp)
+                }
             }
         }
         
