@@ -108,6 +108,14 @@ public struct CoreGraphicsRenderer: Renderer {
     }
     
     private func add(geometry: Geometry, colorFill: ColorFill) {
+        
+        if let multiGeometry = geometry as? MultiGeometry {
+            for subGeometry in multiGeometry.geometries() {
+                add(geometry: subGeometry, colorFill: colorFill)
+            }
+            return
+        }
+        
         context.saveGState()
         
         let geometryXY = projection.forward(geometry: geometry)
