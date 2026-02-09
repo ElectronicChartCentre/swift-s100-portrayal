@@ -947,8 +947,8 @@ public class LuaRuleExecutor {
         
         // TODO: implement
         
-        let featureId = args.string
-        let associationCode = args.string
+        // let featureId = args.string
+        // let associationCode = args.string
         // how to handle optional argument?
         //let roleCode = args.string
         

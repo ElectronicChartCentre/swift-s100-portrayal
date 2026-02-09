@@ -100,6 +100,8 @@ public struct CoreGraphicsRenderer: Renderer {
             add(geometry: geometry, lineInstruction: lineInstruction)
         } else if let pointInstruction = drawingCommand as? PointInstruction {
             add(geometry: geometry, pointInstruction: pointInstruction)
+        } else if let textInstruction = drawingCommand as? TextInstruction {
+            add(geometry: geometry, textInstruction: textInstruction)
         } else if let _ = drawingCommand as? NullInstruction {
             // nothing to do
         } else {
@@ -289,6 +291,64 @@ public struct CoreGraphicsRenderer: Renderer {
             context.restoreGState()
         }
         
+    }
+    
+    private func add(geometry: Geometry, textInstruction: TextInstruction) {
+        
+        if let multiGeometry = geometry as? MultiGeometry {
+            for subGeometry in multiGeometry.geometries() {
+                add(geometry: subGeometry, textInstruction: textInstruction)
+            }
+            return
+        }
+        
+        let geometryXY = projection.forward(geometry: geometry)
+        
+        if let pointXY = geometryXY as? Point {
+            drawText(coordinateXY: pointXY.coordinate, textInstruction: textInstruction)
+        } else if let polygonXY = geometryXY as? SwiftGeo.Polygon {
+            if let centerCoordinateXY = CenterFinder.centerCoordinate2D(geometry: polygonXY, creator: geometryCreator) {
+                drawText(coordinateXY: centerCoordinateXY, textInstruction: textInstruction)
+            }
+        } else if let lineStringXY = geometryXY as? LineString {
+            if let centerCoordinateXY = CenterFinder.centerCoordinate2D(geometry: lineStringXY, creator: geometryCreator) {
+                drawText(coordinateXY: centerCoordinateXY, textInstruction: textInstruction)
+            }
+        } else {
+            print("TODO: unsupported geometry type for text instruction. \(type(of: geometryXY))")
+        }
+    }
+    
+    private func drawText(coordinateXY: any Coordinate, textInstruction: TextInstruction) {
+        
+        var paragraphStyle = NSMutableParagraphStyle()
+        
+        switch (textInstruction.textStyleState.textAlignHorizontal) {
+        case TextAlignHorizontal.Start:
+            paragraphStyle.alignment = .left
+        case TextAlignHorizontal.Center:
+            paragraphStyle.alignment = .center
+        case TextAlignHorizontal.End:
+            paragraphStyle.alignment = .right
+        default:
+            paragraphStyle.alignment = .left
+        }
+        
+        var attributes: [NSAttributedString.Key : Any] = [:]
+        attributes[.paragraphStyle] = paragraphStyle
+        
+        if let color = cgcolor(textInstruction.textStyleState.fontColorToken, transparency: textInstruction.textStyleState.fontColorTransparency) {
+            attributes[.foregroundColor] = color
+        }
+        
+        let attributedString = NSAttributedString(string: textInstruction.text, attributes: attributes)
+        let line = CTLineCreateWithAttributedString(attributedString)
+        
+        context.saveGState()
+        context.translateBy(x: coordinateXY.x, y: coordinateXY.y)
+        context.textPosition = CGPoint(x: 0, y: 0)
+        CTLineDraw(line, context)
+        context.restoreGState()
     }
     
     private func strokePath(_ geometryXY: Geometry) {

@@ -44,7 +44,7 @@ public struct SVGRect: SVGShape {
                     context.restoreGState()
                     return
                 }
-                if let stroke = e as? CSS.Stroke, stroke.color != nil {
+                if e is CSS.Stroke {
                     doStroke = true
                 }
                 if let fill = e as? CSS.Fill, fill.color != nil {

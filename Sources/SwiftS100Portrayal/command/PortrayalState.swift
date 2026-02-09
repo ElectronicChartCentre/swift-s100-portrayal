@@ -12,5 +12,6 @@ class PortrayalState {
     var lineStyles: [LineStyle] = []
     let visibilityState = VisibilityState()
     let transformState = TransformState()
+    let textStyleState = TextStyleState()
         
 }
