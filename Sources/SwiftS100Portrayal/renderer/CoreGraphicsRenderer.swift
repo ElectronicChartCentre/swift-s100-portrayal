@@ -321,7 +321,7 @@ public struct CoreGraphicsRenderer: Renderer {
     
     private func drawText(coordinateXY: any Coordinate, textInstruction: TextInstruction) {
         
-        var paragraphStyle = NSMutableParagraphStyle()
+        let paragraphStyle = NSMutableParagraphStyle()
         
         switch (textInstruction.textStyleState.textAlignHorizontal) {
         case TextAlignHorizontal.Start:

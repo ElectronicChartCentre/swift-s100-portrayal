@@ -15,6 +15,8 @@ import Silica
 
 public protocol SVGShape {
     
+    var style: SVGShapeStyle { get }
+    
     func draw(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette)
     
 }

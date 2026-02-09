@@ -20,8 +20,7 @@ public struct SVGRect: SVGShape {
      */
     
     public let classParts: [String]
-    public let fill: String?
-    public let strokeWidth: Double?
+    public let style: SVGShapeStyle
     public let x: Double
     public let y: Double
     public let width: Double
@@ -50,7 +49,7 @@ public struct SVGRect: SVGShape {
                 if let fill = e as? CSS.Fill, fill.color != nil {
                     doFill = true
                 }
-                e.ececute(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
+                e.ececute(context: context, screenResolution: screenResolution, colorPalette: colorPalette, style: style)
             }
         }
 
@@ -61,7 +60,7 @@ public struct SVGRect: SVGShape {
         path.addLine(to: CGPoint(x: xpx + wpx, y: ypx))
         path.closeSubpath()
         
-        if let strokeWidth = strokeWidth {
+        if let strokeWidth = style.strokeWidth {
             context.setLineWidth(screenResolution.pixels(mm: strokeWidth))
         }
 
@@ -89,10 +88,9 @@ public struct SVGRect: SVGShape {
         }
         
         let classParts = cssClass.components(separatedBy: " ")
-        let fill = kv["fill"]
-        let strokeWidth = kv["stroke-width"].flatMap(Double.init)
+        let style = SVGShapeStyle.create(kv)
         
-        return SVGRect(classParts: classParts, fill: fill, strokeWidth: strokeWidth, x: x, y: y, width: width, height: height)
+        return SVGRect(classParts: classParts, style: style, x: x, y: y, width: width, height: height)
     }
     
 }

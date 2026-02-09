@@ -21,8 +21,7 @@ struct SVGPath: SVGShape {
      */
     
     public let classParts: [String]
-    public let strokeWidth: Double?
-    public let fillOpacity: Double?
+    public let style: SVGShapeStyle
     public let pathCommands: [PathCommand]
     
     public func draw(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette) {
@@ -43,14 +42,15 @@ struct SVGPath: SVGShape {
                 if let fill = e as? CSS.Fill, fill.color != nil {
                     doFill = true
                 }
-                e.ececute(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
+                
+                e.ececute(context: context, screenResolution: screenResolution, colorPalette: colorPalette, style: style)
             }
         }
         
-        if let strokeWidth = strokeWidth {
+        if let strokeWidth = style.strokeWidth {
             context.setLineWidth(screenResolution.pixels(mm: strokeWidth))
         }
-
+        
         let path = CGMutablePath()
         for pathCommand in pathCommands {
             pathCommand.execute(path: path, sr: screenResolution)
@@ -74,8 +74,7 @@ struct SVGPath: SVGShape {
         }
         
         let classParts = cssClass.components(separatedBy: " ")
-        let strokeWidth = kv["stroke-width"].flatMap(Double.init)
-        let fillOpacity = kv["fill-opacity"].flatMap(Double.init)
+        let style = SVGShapeStyle.create(kv)
 
         var pathCommands: [PathCommand] = []
         
@@ -168,7 +167,7 @@ struct SVGPath: SVGShape {
             return nil
         }
         
-        return SVGPath(classParts: classParts, strokeWidth: strokeWidth, fillOpacity: fillOpacity, pathCommands: pathCommands)
+        return SVGPath(classParts: classParts, style: style, pathCommands: pathCommands)
     }
 
     protocol PathCommand {

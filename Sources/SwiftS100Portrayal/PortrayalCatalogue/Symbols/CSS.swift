@@ -53,13 +53,13 @@ public struct CSS {
     
     public protocol Entry {
         
-        func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette)
+        func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette, style: SVGShapeStyle)
         
     }
     
     public struct DisplayNone: Entry {
         
-        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette) {
+        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette, style: SVGShapeStyle) {
         }
         
     }
@@ -68,7 +68,7 @@ public struct CSS {
         
         public let value: Double
         
-        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette) {
+        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette, style: SVGShapeStyle) {
             context.setLineWidth(screenResolution.pixels(mm: value))
         }
         
@@ -78,7 +78,7 @@ public struct CSS {
         
         public let color: Color
         
-        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette) {
+        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette, style: SVGShapeStyle) {
             context.setStrokeColor(red: Double(color.r) / 255.0, green: Double(color.g) / 255.0, blue: Double(color.b) / 255.0, alpha: 1.0)
         }
         
@@ -88,10 +88,10 @@ public struct CSS {
         
         public let color: Color?
         
-        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette) {
+        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette, style: SVGShapeStyle) {
             
             if let color = color {
-                context.setFillColor(red: Double(color.r) / 255.0, green: Double(color.g) / 255.0, blue: Double(color.b) / 255.0, alpha: 1.0)
+                context.setFillColor(red: Double(color.r) / 255.0, green: Double(color.g) / 255.0, blue: Double(color.b) / 255.0, alpha: style.fillOpacity ?? 1.0)
             }
 
         }
@@ -102,7 +102,7 @@ public struct CSS {
         
         public let value: String
         
-        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette) {
+        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette, style: SVGShapeStyle) {
         }
         
     }
@@ -111,7 +111,7 @@ public struct CSS {
         
         public let value: String
         
-        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette) {
+        public func ececute(context: CGContext, screenResolution: ScreenResolution, colorPalette: ColorPalette, style: SVGShapeStyle) {
         }
         
     }

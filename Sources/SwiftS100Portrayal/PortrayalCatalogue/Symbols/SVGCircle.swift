@@ -21,9 +21,7 @@ public struct SVGCircle: SVGShape {
      */
     
     public let classParts: [String]
-    public let fill: String?
-    public let strokeWidth: Double?
-    public let fillOpacity: Double?
+    public let style: SVGShapeStyle
     public let cx: Double
     public let cy: Double
     public let r: Double
@@ -50,11 +48,11 @@ public struct SVGCircle: SVGShape {
                 if let fill = e as? CSS.Fill, fill.color != nil {
                     doFill = true
                 }
-                e.ececute(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
+                e.ececute(context: context, screenResolution: screenResolution, colorPalette: colorPalette, style: style)
             }
         }
         
-        if let strokeWidth = strokeWidth {
+        if let strokeWidth = style.strokeWidth {
             context.setLineWidth(screenResolution.pixels(mm: strokeWidth))
         }
 
@@ -81,11 +79,9 @@ public struct SVGCircle: SVGShape {
         }
         
         let classParts = cssClass.components(separatedBy: " ")
-        let fill = kv["fill"]
-        let strokeWidth = kv["stroke-width"].flatMap(Double.init)
-        let fillOpacity = kv["fill-opacity"].flatMap(Double.init)
+        let style = SVGShapeStyle.create(kv)
         
-        return SVGCircle(classParts: classParts, fill: fill, strokeWidth: strokeWidth, fillOpacity: fillOpacity, cx: cx, cy: cy, r: r)
+        return SVGCircle(classParts: classParts, style: style, cx: cx, cy: cy, r: r)
     }
     
 }
