@@ -220,7 +220,7 @@ public struct CoreGraphicsRenderer: Renderer {
         
         if !lineStyle.symbols.isEmpty {
             if let lineXY = geometryXY as? LinearGeometry {
-                placeSymbolsAlongLine(lineXY: lineXY.removeDuplicatePoints(), lineStyle: lineStyle)
+                placeSymbolsAlongLine(lineXY: lineXY.removeDuplicatePoints(), lineStyle: lineStyle, lineInstruction: lineInstruction)
             } else {
                 print("TODO: line symbol in non-linear geometry. \(type(of: geometryXY))")
             }
@@ -247,7 +247,13 @@ public struct CoreGraphicsRenderer: Renderer {
             context.saveGState()
             context.translateBy(x: pointXY.coordinate.x, y: pointXY.coordinate.y)
             
-            if let rotationCRS = pointInstruction.rotationCRS, let rotation = pointInstruction.rotation {
+            if let xmm = pointInstruction.transformState.localOffsetXMM, let ymm = pointInstruction.transformState.localOffsetYMM {
+                let xpx = screenResolution.pixels(mm: xmm)
+                let ypx = screenResolution.pixels(mm: ymm)
+                context.translateBy(x: xpx, y: ypx)
+            }
+            
+            if let rotationCRS = pointInstruction.transformState.rotationCRS, let rotation = pointInstruction.transformState.rotation {
                 if rotationCRS == RotationCommand.RotationCRS.GeographicCRS.rawValue {
                     // TODO: calculate screen rotation using projection
                     context.rotate(by: rotation * .pi / -180.0)
@@ -278,7 +284,13 @@ public struct CoreGraphicsRenderer: Renderer {
             context.saveGState()
             context.translateBy(x: coordinateXY.x, y: coordinateXY.y)
             
-            if let rotationCRS = pointInstruction.rotationCRS, let rotation = pointInstruction.rotation {
+            if let xmm = pointInstruction.transformState.localOffsetXMM, let ymm = pointInstruction.transformState.localOffsetYMM {
+                let xpx = screenResolution.pixels(mm: xmm)
+                let ypx = screenResolution.pixels(mm: ymm)
+                context.translateBy(x: xpx, y: ypx)
+            }
+            
+            if let rotationCRS = pointInstruction.transformState.rotationCRS, let rotation = pointInstruction.transformState.rotation {
                 if rotationCRS == RotationCommand.RotationCRS.GeographicCRS.rawValue {
                     // TODO: calculate screen rotation using projection
                     context.rotate(by: rotation * .pi / -180.0)
@@ -377,7 +389,7 @@ public struct CoreGraphicsRenderer: Renderer {
         context.strokePath()
     }
     
-    private func placeSymbolsAlongLine(lineXY: LinearGeometry, lineStyle: LineStyle) {
+    private func placeSymbolsAlongLine(lineXY: LinearGeometry, lineStyle: LineStyle, lineInstruction: LineInstruction) {
         
         let intervalPx = screenResolution.pixels(mm: lineStyle.intervalLength)
         
@@ -386,9 +398,6 @@ public struct CoreGraphicsRenderer: Renderer {
             guard let svg = portrayalCatalogue.symbolSVGByName[lineSymbol.reference] else {
                 continue
             }
-            
-            let symbolOffsetRelativeToViewBox = Vector2D(x: screenResolution.pixels(mm: svg.viewBox.x),
-                                                         y: screenResolution.pixels(mm: svg.viewBox.y))
             
             let symbolHalfWidthPx = screenResolution.pixels(mm: svg.width / 2.0)
             var distanceToNextSymbolPx = screenResolution.pixels(mm: lineSymbol.position)
@@ -431,8 +440,14 @@ public struct CoreGraphicsRenderer: Renderer {
                     
                     context.saveGState()
                     context.translateBy(x: translation.x, y: translation.y)
+                    
+                    if let xmm = lineInstruction.transformState.localOffsetXMM, let ymm = lineInstruction.transformState.localOffsetYMM {
+                        let xpx = screenResolution.pixels(mm: xmm)
+                        let ypx = screenResolution.pixels(mm: ymm)
+                        context.translateBy(x: xpx, y: ypx)
+                    }
+                    
                     context.rotate(by: rotation)
-                    context.translateBy(x: symbolOffsetRelativeToViewBox.x, y: symbolOffsetRelativeToViewBox.y)
                     svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
                     context.restoreGState()
 

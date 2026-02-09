@@ -8,10 +8,10 @@ import Foundation
 public struct TextInstruction: DrawingCommand {
     
     public let visibilityState: VisibilityState.Record
-    
     public let geometryState: GeometryState.Record
-    
+    public let transformState: TransformState.Record
     public let textStyleState: TextStyleState.Record
+
     
     public var instructionTypePriority: Int = 0 // 100
     
@@ -20,6 +20,7 @@ public struct TextInstruction: DrawingCommand {
     init(state: PortrayalState, args: [String]) {
         visibilityState = state.visibilityState.toRecord()
         geometryState = state.geometryState.toRecord()
+        transformState = state.transformState.toRecord()
         textStyleState = state.textStyleState.toRecord()
         
         text = args.first ?? ""

@@ -9,6 +9,7 @@ public struct LineInstruction: DrawingCommand {
     
     public let visibilityState: VisibilityState.Record
     public let geometryState: GeometryState.Record
+    public let transformState: TransformState.Record
 
     public let instructionTypePriority = 80
     
@@ -20,6 +21,7 @@ public struct LineInstruction: DrawingCommand {
         visibilityState = state.visibilityState.toRecord()
         lineStylesFromState = state.lineStyles
         geometryState = state.geometryState.toRecord()
+        transformState = state.transformState.toRecord()
 
         var byName: [String: LineStyle] = [:]
         for lineStyle in lineStylesFromState {

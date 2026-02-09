@@ -8,7 +8,15 @@ import Foundation
 struct ScaleFactorCommand: TransformCommand {
     
     static func handle(state: PortrayalState, args: [String]) -> DrawingCommand? {
-        print("TODO: implement \(self.self) for args: \(args)")
+        
+        if args.count < 1 {
+            return nil
+        }
+        
+        if let scaleFactor = Double(args[0]) {
+            state.transformState.scaleFactor = scaleFactor
+        }
+        
         return nil
     }
     
