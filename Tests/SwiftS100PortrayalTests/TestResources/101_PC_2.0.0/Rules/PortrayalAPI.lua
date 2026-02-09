@@ -514,7 +514,7 @@ function CreateFeature(featureID, featureCode)
 
 		if not ias then
 			Debug.StopPerformance('Lua Code - Total')
-			local informationIDs = HostFeatureGetAssociatedInformationIDs(self.ID, associationCode, roleCode)
+			local informationIDs = HostFeatureGetAssociatedInformationIDs(self.ID, associationCode, roleCode or '')
 			Debug.StartPerformance('Lua Code - Total')
 
 			ias = {}
