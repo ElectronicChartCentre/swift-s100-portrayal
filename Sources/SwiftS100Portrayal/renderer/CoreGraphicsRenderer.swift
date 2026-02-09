@@ -281,9 +281,9 @@ public struct CoreGraphicsRenderer: Renderer {
             if let rotationCRS = pointInstruction.rotationCRS, let rotation = pointInstruction.rotation {
                 if rotationCRS == RotationCommand.RotationCRS.GeographicCRS.rawValue {
                     // TODO: calculate screen rotation using projection
-                    context.rotate(by: rotation * .pi / 180.0)
+                    context.rotate(by: rotation * .pi / -180.0)
                 } else {
-                    context.rotate(by: rotation * .pi / 180.0)
+                    context.rotate(by: rotation * .pi / -180.0)
                 }
             }
             
