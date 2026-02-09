@@ -101,7 +101,7 @@ public class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
     public func parser(_ parser: XMLParser, didEndElement elementName: String, namespaceURI: String?, qualifiedName qName: String?) {
         
         if elementLevel == 4 {
-            if "description" == elementName {
+            if "description" == elementName, !currentKV.isEmpty {
                 currentDescription = Description.create(currentKV)
                 if currentDescription == nil {
                     print("DEBUG: could not parse \(elementName) from \(currentKV)")
