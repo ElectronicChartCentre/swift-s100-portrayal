@@ -13,11 +13,13 @@ let package = Package(
         ),
     ],
     dependencies: [
-        //.package(url: "https://github.com/ElectronicChartCentre/swift-s101", from: "1.0.0"),
-        .package(path: "../swift-s101"),
-        .package(path: "../swift-s100-feature-catalogue"),
-        //.package(url: "https://github.com/SwiftyLua/SwiftyLua", from: "0.1.0")
-        .package(path: "../ext/SwiftyLua"),
+        .package(url: "https://github.com/ElectronicChartCentre/swift-s101", branch: "main"),
+        //.package(path: "../swift-s101"),
+        .package(url: "https://github.com/ElectronicChartCentre/swift-s100-feature-catalogue", branch: "main"),
+        //.package(path: "../swift-s100-feature-catalogue"),
+        //.package(url: "https://github.com/SwiftyLua/SwiftyLua", from: "0.1.0"),
+        .package(url: "https://github.com/halset/SwiftyLua", branch: "toretemp"),
+        //.package(path: "../ext/SwiftyLua"),
         .package(url: "https://github.com/PureSwift/Silica", branch: "master"),
     ],
     targets: [
