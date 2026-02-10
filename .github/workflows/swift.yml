@@ -29,3 +29,10 @@ jobs:
 
     - name: Run tests
       run: swift test -v
+      
+    - name: Archive rendered S-101
+      uses: actions/upload-artifact@v4
+      with:
+        name: rendered-s101-${{ matrix.os }}
+        path: /tmp/101*png
+        retention-days: 5
