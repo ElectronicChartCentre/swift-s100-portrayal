@@ -333,21 +333,32 @@ public struct CoreGraphicsRenderer: Renderer {
     
     private func drawText(coordinateXY: any Coordinate, textInstruction: TextInstruction) {
         
-        let paragraphStyle = NSMutableParagraphStyle()
-        
+        var adjustFactorX: Double = 0
+        var adjustFactorY: Double = 0
+
         switch (textInstruction.textStyleState.textAlignHorizontal) {
         case TextAlignHorizontal.Start:
-            paragraphStyle.alignment = .left
+            adjustFactorX = 0
         case TextAlignHorizontal.Center:
-            paragraphStyle.alignment = .center
+            adjustFactorX = -0.5
         case TextAlignHorizontal.End:
-            paragraphStyle.alignment = .right
+            adjustFactorX = -1
         default:
-            paragraphStyle.alignment = .left
+            break
+        }
+        
+        switch (textInstruction.textStyleState.textAlignVertical) {
+        case TextAlignVertical.Bottom:
+            adjustFactorY = 0
+        case TextAlignVertical.Center:
+            adjustFactorY = -0.5
+        case TextAlignVertical.Top:
+            adjustFactorY = -1
+        default:
+            break
         }
         
         var attributes: [NSAttributedString.Key : Any] = [:]
-        attributes[.paragraphStyle] = paragraphStyle
         
         if let color = cgcolor(textInstruction.textStyleState.fontColorToken, transparency: textInstruction.textStyleState.fontColorTransparency) {
             attributes[.foregroundColor] = color
@@ -355,10 +366,18 @@ public struct CoreGraphicsRenderer: Renderer {
         
         let attributedString = NSAttributedString(string: textInstruction.text, attributes: attributes)
         let line = CTLineCreateWithAttributedString(attributedString)
+        let lineBounds = CTLineGetBoundsWithOptions(line, .useGlyphPathBounds)
         
         context.saveGState()
         context.translateBy(x: coordinateXY.x, y: coordinateXY.y)
-        context.textPosition = CGPoint(x: 0, y: 0)
+        
+        if let xmm = textInstruction.transformState.localOffsetXMM, let ymm = textInstruction.transformState.localOffsetYMM {
+            let xpx = screenResolution.pixels(mm: xmm)
+            let ypx = screenResolution.pixels(mm: ymm)
+            context.translateBy(x: xpx, y: ypx)
+        }
+        
+        context.textPosition = CGPoint(x: lineBounds.width * adjustFactorX, y: lineBounds.height * adjustFactorY)
         CTLineDraw(line, context)
         context.restoreGState()
     }

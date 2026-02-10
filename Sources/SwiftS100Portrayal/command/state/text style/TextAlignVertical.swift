@@ -13,11 +13,11 @@ struct TextAlignVertical: TextStyleCommand {
     
     static func handle(state: PortrayalState, args: [String]) -> DrawingCommand? {
         
-        if args.count == 1 {
+        if args.count != 1 {
             return nil
         }
         
-        state.textStyleState.textAlignVertical = args[1]
+        state.textStyleState.textAlignVertical = args[0]
         
         return nil
     }
