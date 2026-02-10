@@ -459,13 +459,6 @@ public struct CoreGraphicsRenderer: Renderer {
                     
                     context.saveGState()
                     context.translateBy(x: translation.x, y: translation.y)
-                    
-                    if let xmm = lineInstruction.transformState.localOffsetXMM, let ymm = lineInstruction.transformState.localOffsetYMM {
-                        let xpx = screenResolution.pixels(mm: xmm)
-                        let ypx = screenResolution.pixels(mm: ymm)
-                        context.translateBy(x: xpx, y: ypx)
-                    }
-                    
                     context.rotate(by: rotation)
                     svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
                     context.restoreGState()
