@@ -16,7 +16,7 @@ struct PortrayalCatalogueParserTests {
             return
         }
 
-        #expect(pc.areaFillById.count == 25)
+        #expect(pc.areaFillFileById.count == 25)
         #expect(pc.ruleFileById.count == 215)
         #expect(pc.symbolFileById.count == 718)
         // TODO: handle compositeLineStyle
@@ -32,6 +32,7 @@ struct PortrayalCatalogueParserTests {
         }
         
         #expect(pc.symbolSVGByName.count == 718)
+        #expect(pc.areaFillByName.count == 25)
     }
     
     @Test func parseS124PortrayalCatalogue() async throws {
@@ -41,7 +42,7 @@ struct PortrayalCatalogueParserTests {
             return
         }
         
-        #expect(pc.areaFillById.count == 1)
+        #expect(pc.areaFillFileById.count == 1)
         #expect(pc.ruleFileById.count == 9)
         #expect(pc.symbolFileById.count == 5)
         #expect(pc.lineStyleByName.count == 2)

@@ -5,7 +5,7 @@
 
 import Foundation
 
-struct AreaFill {
+struct AreaFillFile {
     
     let id: String
     let description: Description
@@ -13,7 +13,7 @@ struct AreaFill {
     let fileType: String
     let fileFormat: String
     
-    static func create(_ kv: [String: String], id: String, description: Description) -> AreaFill? {
+    static func create(_ kv: [String: String], id: String, description: Description) -> AreaFillFile? {
         guard let fileName = kv["fileName"] else {
             return nil
         }
@@ -23,7 +23,11 @@ struct AreaFill {
         guard let fileFormat = kv["fileFormat"] else {
             return nil
         }
-        return AreaFill(id: id, description: description, fileName: fileName, fileType: fileType, fileFormat: fileFormat)
+        return AreaFillFile(id: id, description: description, fileName: fileName, fileType: fileType, fileFormat: fileFormat)
+    }
+    
+    func fileNameWithoutSuffix() -> String {
+        return String(fileName.split(separator: ".")[0])
     }
     
 }

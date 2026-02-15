@@ -69,6 +69,7 @@ struct DrawingCommandCreator: Sendable {
         registry["PointInstruction"] = PointInstruction.init(state:args:)
         registry["LineInstruction"] = LineInstruction.init(state:args:)
         registry["ColorFill"] = ColorFill.init(state:args:)
+        registry["AreaFillReference"] = AreaFillReference.init(state:args:)
         registry["TextInstruction"] = TextInstruction.init(state:args:)
         
         // null instruction

@@ -21,7 +21,7 @@ public class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
     private var currentId: String?
     private var elementLevel = 0
     
-    private var areaFillById: [String: AreaFill] = [:]
+    private var areaFillById: [String: AreaFillFile] = [:]
     private var ruleFileById: [String: RuleFile] = [:]
     private var symbolFileById: [String: SymbolFile] = [:]
     private var lineStyleById: [String: LineStyleFile] = [:]
@@ -70,7 +70,14 @@ public class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
                 }
             }
             
-            return PortrayalCatalogue(bundle: bundle, path: portrayalCataloguePath, areaFillById: parser.areaFillById, ruleFileById: parser.ruleFileById, symbolFileById: parser.symbolFileById, lineStyleByName: lineStyleByName, colorProfileFileById: parser.colorProfileFileById, styleSheetFileById: parser.styleSheetFileById, viewingGroupById: parser.viewingGroupById, colorPaletteByName: colorPaletteByName, symbolSVGByName: symbolSVGByName)
+            var areaFillByName: [String: AreaFill] = [:]
+            for areaFillFile in parser.areaFillById.values {
+                if let areaFill = AreaFillParser.parse(bundle: bundle, portrayalCataloguePath: portrayalCataloguePath, areaFillFile: areaFillFile) {
+                    areaFillByName[areaFill.name] = areaFill
+                }
+            }
+            
+            return PortrayalCatalogue(bundle: bundle, path: portrayalCataloguePath, areaFillFileById: parser.areaFillById, ruleFileById: parser.ruleFileById, symbolFileById: parser.symbolFileById, lineStyleByName: lineStyleByName, colorProfileFileById: parser.colorProfileFileById, styleSheetFileById: parser.styleSheetFileById, viewingGroupById: parser.viewingGroupById, colorPaletteByName: colorPaletteByName, symbolSVGByName: symbolSVGByName, areaFillByName: areaFillByName)
         } catch {
             return nil
         }
@@ -113,7 +120,7 @@ public class PortrayalCatalogueParser: NSObject, XMLParserDelegate {
             if let id = currentId, let description = currentDescription {
                 switch (elementName) {
                 case "areaFill":
-                    if let areaFill = AreaFill.create(currentKV, id: id, description: description) {
+                    if let areaFill = AreaFillFile.create(currentKV, id: id, description: description) {
                         areaFillById[areaFill.id] = areaFill
                     } else {
                         print("DEBUG: could not parse \(elementName) from \(currentKV)")

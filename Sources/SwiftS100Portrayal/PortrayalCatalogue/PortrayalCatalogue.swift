@@ -10,7 +10,7 @@ public struct PortrayalCatalogue {
     let bundle: Bundle
     let path: String
     
-    let areaFillById: [String: AreaFill]
+    let areaFillFileById: [String: AreaFillFile]
     let ruleFileById: [String: RuleFile]
     let symbolFileById: [String: SymbolFile]
     let lineStyleByName: [String: LineStyle]
@@ -20,5 +20,6 @@ public struct PortrayalCatalogue {
 
     public let colorPaletteByName: [String: ColorPalette]
     public let symbolSVGByName: [String: SVG]
-    
+    public let areaFillByName: [String: AreaFill]
+
 }

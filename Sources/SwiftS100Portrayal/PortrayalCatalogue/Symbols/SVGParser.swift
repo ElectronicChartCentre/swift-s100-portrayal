@@ -123,6 +123,5 @@ class SVGParser: NSObject, XMLParserDelegate {
         let parentElement = elementStack[elementLevel]
         parentElement.append(elementName, String(currentElementValue))
     }
-
     
 }

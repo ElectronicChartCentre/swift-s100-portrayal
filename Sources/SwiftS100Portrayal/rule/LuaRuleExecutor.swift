@@ -897,10 +897,18 @@ public class LuaRuleExecutor {
             var exteriorRing: Value? = nil
             var interiorRings: [Value] = []
             for rias in surfaceRecord.riass() {
-                if exteriorRing == nil {
+                switch rias.usag {
+                case RIAS.usagExterior:
+                    if exteriorRing != nil {
+                        print("ERROR: Found multiple exterior rings")
+                    }
                     exteriorRing = luaCreateSpatialAssociation(rias)
-                } else if let r = luaCreateSpatialAssociation(rias) {
-                    interiorRings.append(r)
+                case RIAS.usagInterior:
+                    if let r = luaCreateSpatialAssociation(rias) {
+                        interiorRings.append(r)
+                    }
+                default:
+                    print("ERROR: Unsupported RIAS usage \(rias.usag)")
                 }
             }
             return .value(luaCreateSurface(ext: exteriorRing, ints: interiorRings))

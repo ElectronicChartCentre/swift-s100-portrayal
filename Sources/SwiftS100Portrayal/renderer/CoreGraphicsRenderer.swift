@@ -102,10 +102,12 @@ public struct CoreGraphicsRenderer: Renderer {
             add(geometry: geometry, pointInstruction: pointInstruction)
         } else if let textInstruction = drawingCommand as? TextInstruction {
             add(geometry: geometry, textInstruction: textInstruction)
+        } else if let areaFillReference = drawingCommand as? AreaFillReference {
+            add(geometry: geometry, areaFillReference: areaFillReference)
         } else if let _ = drawingCommand as? NullInstruction {
             // nothing to do
         } else {
-            print("TODO: handle \(drawingCommand)")
+            print("TODO: handle drawing command: \(type(of: drawingCommand))")
         }
     }
     
@@ -131,19 +133,8 @@ public struct CoreGraphicsRenderer: Renderer {
         }
         
         if let polygonXY = geometryXY as? SwiftGeo.Polygon {
-            context.beginPath()
-            for (idx, point) in polygonXY.shell.coordinates.enumerated() {
-                if idx == 0 {
-                    context.move(to: CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
-                } else {
-                    context.addLine(to: CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
-                }
-            }
-            context.closePath()
-            context.fillPath()
-            context.strokePath()
-            
-            // TODO: holes..
+            context.addPath(path(polygonXY: polygonXY))
+            context.drawPath(using: .eoFillStroke)
         } else {
             print("ERROR: unsupported geometry type \(geometryXY) for fill")
         }
@@ -329,6 +320,76 @@ public struct CoreGraphicsRenderer: Renderer {
         } else {
             print("TODO: unsupported geometry type for text instruction. \(type(of: geometryXY))")
         }
+    }
+    
+    private func add(geometry: Geometry, areaFillReference: AreaFillReference) {
+        
+        guard let polygon = geometry as? SwiftGeo.Polygon else {
+            print("TODO: unsupported geometry type for area fill reference. \(type(of: geometry))")
+            return
+        }
+        
+        guard let areaFill = portrayalCatalogue.areaFillByName[areaFillReference.reference] else {
+            return
+        }
+        
+        guard let svg = portrayalCatalogue.symbolSVGByName[areaFill.symbolName] else {
+            return
+        }
+        
+        let v1px = screenResolution.pixels(mm: areaFill.v1.x)
+        let v1py = screenResolution.pixels(mm: areaFill.v1.y)
+        let v2px = screenResolution.pixels(mm: areaFill.v2.x)
+        let v2py = screenResolution.pixels(mm: areaFill.v2.y)
+
+        let polygonXY = projection.forward(geometry: polygon)
+        guard let polygonXY = polygonXY as? SwiftGeo.Polygon else {
+            return
+        }
+        
+        guard let bboxXY = polygonXY.bbox() else {
+            return
+        }
+        
+        context.saveGState()
+        
+        // clip to polygon
+        context.addPath(path(polygonXY: polygonXY))
+        context.clip(using: .evenOdd)
+        
+        // TODO: do not draw (that much) outside of image
+        // TODO: use rest of v1/v2
+
+        for x in stride(from: bboxXY.minX, to: bboxXY.maxX, by: v1px) {
+            for y in stride(from: bboxXY.minY, to: bboxXY.maxY, by: v2py) {
+                context.saveGState()
+                context.translateBy(x: x, y: y)
+                svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
+                context.restoreGState()
+            }
+        }
+        
+        context.restoreGState()
+    }
+    
+    private func path(polygonXY: SwiftGeo.Polygon) -> CGMutablePath {
+        let path = CGMutablePath()
+        append(path: path, ring: polygonXY.shell)
+        for hole in polygonXY.holes {
+            append(path: path, ring: hole)
+        }
+        return path
+    }
+    
+    private func append(path: CGMutablePath, ring: LinearRing) {
+        for (idx, point) in ring.coordinates.enumerated() {
+            if idx == 0 {
+                path.move(to: CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
+            } else {
+                path.addLine(to: CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
+            }
+        }
+        path.closeSubpath()
     }
     
     private func drawText(coordinateXY: any Coordinate, textInstruction: TextInstruction) {
