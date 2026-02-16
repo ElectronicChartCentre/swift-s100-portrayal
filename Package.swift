@@ -22,7 +22,7 @@ let package = Package(
         //.package(path: "../ext/SwiftyLua"),
         //.package(url: "https://github.com/PureSwift/Silica", branch: "master"),
         .package(url: "https://github.com/halset/Silica", branch: "work"),
-        .package(path: "../ext/Silica"),
+        //.package(path: "../ext/Silica"),
     ],
     targets: [
         .target(
