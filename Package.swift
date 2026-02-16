@@ -20,7 +20,9 @@ let package = Package(
         //.package(url: "https://github.com/SwiftyLua/SwiftyLua", from: "0.1.0"),
         .package(url: "https://github.com/halset/SwiftyLua", branch: "toretemp"),
         //.package(path: "../ext/SwiftyLua"),
-        .package(url: "https://github.com/PureSwift/Silica", branch: "master"),
+        //.package(url: "https://github.com/PureSwift/Silica", branch: "master"),
+        .package(url: "https://github.com/halset/Silica", branch: "work"),
+        .package(path: "../ext/Silica"),
     ],
     targets: [
         .target(

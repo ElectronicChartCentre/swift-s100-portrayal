@@ -40,7 +40,7 @@ class AreaFillParser: NSObject, XMLParserDelegate {
             
             let xmlParser = XMLParser(data: data)
             xmlParser.delegate = parser
-            xmlParser.parse()
+            let _ = xmlParser.parse()
 
             guard let areaCRS = parser.areaCRS, let symbolName = parser.symbolName, let v1 = parser.v1, let v2 = parser.v2 else {
                 return nil

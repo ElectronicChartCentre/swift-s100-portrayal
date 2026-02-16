@@ -39,7 +39,7 @@ class LineStyleParser: NSObject, XMLParserDelegate {
             
             let xmlParser = XMLParser(data: data)
             xmlParser.delegate = parser
-            xmlParser.parse()
+            let _ = xmlParser.parse()
             
             guard let intervalLength = parser.intervalLength, let pen = parser.pen else {
                 return nil

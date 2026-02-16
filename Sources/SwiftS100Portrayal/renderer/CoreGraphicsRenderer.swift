@@ -21,6 +21,7 @@ import UIKit
 import CoreGraphics
 #elseif canImport(Silica)
 import Silica
+import Cairo
 #endif
 
 public struct CoreGraphicsRenderer: Renderer {
@@ -73,23 +74,41 @@ public struct CoreGraphicsRenderer: Renderer {
         self.largeBoundingBoxPixel = DefaultBoundingBox(minX: 0, maxX: Double(widthPixel), minY: 0, maxY: Double(heightPixel)).grow(factor: 1.5)
         self.largeBoundingBoxWorld = self.largeBoundingBoxPixel.transform( self.projection.inverse)
 
+        var context: CGContext?
+  
+        #if os(iOS) || os(tvOS) || os(macOS)
+        
         let bitsPerComponent = 8
         let bytesPerPixel = 4 // RGBA
         let bytesPerRow = widthPixel * bytesPerPixel
         let colorSpace = CGColorSpaceCreateDeviceRGB()
         let bitmapInfo = CGImageAlphaInfo.premultipliedFirst.rawValue | CGBitmapInfo.byteOrder32Little.rawValue
         
-        guard let context = CGContext(
+        context = CGContext(
             data: nil,
             width: widthPixel,
             height: heightPixel,
             bitsPerComponent: bitsPerComponent,
             bytesPerRow: bytesPerRow,
             space: colorSpace,
-            bitmapInfo: bitmapInfo
-        ) else {
+            bitmapInfo: bitmapInfo)
+
+        #elseif os(Linux)
+        do {
+            let surface = try Cairo.Surface.Image(format: .argb32, width: widthPixel, height: heightPixel)
+            context = try Silica.CGContext(surface: surface, size: CGSize(width: widthPixel, height: heightPixel))
+        } catch {
+            print("ERROR: Failed to create CGContext for Linux with Silica. \(error)")
+        }
+        #else
+        print("ERROR: unsupported platform")
+        #endif
+        
+        
+        guard let context = context else {
             return nil
         }
+        
         self.context = context
     }
     
@@ -421,6 +440,7 @@ public struct CoreGraphicsRenderer: Renderer {
         
         var attributes: [NSAttributedString.Key : Any] = [:]
         
+        #if os(iOS) || os(tvOS) || os(macOS)
         if let color = cgcolor(textInstruction.textStyleState.fontColorToken, transparency: textInstruction.textStyleState.fontColorTransparency) {
             attributes[.foregroundColor] = color
         }
@@ -441,6 +461,9 @@ public struct CoreGraphicsRenderer: Renderer {
         context.textPosition = CGPoint(x: lineBounds.width * adjustFactorX, y: lineBounds.height * adjustFactorY)
         CTLineDraw(line, context)
         context.restoreGState()
+        #endif
+        
+        // TODO: similar text for non-Apple platforms
     }
     
     private func strokePath(_ geometryXY: Geometry) {
@@ -558,7 +581,7 @@ public struct CoreGraphicsRenderer: Renderer {
         }
 
         var imageData: Data? = nil
-        #if os(iOS) || os(tvOS) || os(linux)
+        #if os(iOS) || os(tvOS) || os(Linux)
         let uiImage = UIImage(cgImage: cgImage)
         imageData = uiImage.pngData()
         #elseif os(macOS)

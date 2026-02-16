@@ -39,7 +39,7 @@ class ColorProfileParser: NSObject, XMLParserDelegate {
             
             let xmlParser = XMLParser(data: data)
             xmlParser.delegate = parser
-            xmlParser.parse()
+            let _ = xmlParser.parse()
             
             return parser.colorPaletteByName
         } catch {

@@ -37,7 +37,7 @@ class SVGParser: NSObject, XMLParserDelegate {
             
             let xmlParser = XMLParser(data: data)
             xmlParser.delegate = parser
-            xmlParser.parse()
+            let _ = xmlParser.parse()
             
             guard let width = parser.width, let height = parser.height else {
                 print("ERROR: missing width and/or height in \(symbolFile.fileName)")

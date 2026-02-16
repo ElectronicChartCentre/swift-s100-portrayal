@@ -10,4 +10,6 @@ public protocol Renderer {
     
     func add(geometry: Geometry, drawingCommand: DrawingCommand)
     
+    func asPNGData() -> Data?
+    
 }
