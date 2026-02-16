@@ -104,7 +104,6 @@ public struct CoreGraphicsRenderer: Renderer {
         print("ERROR: unsupported platform")
         #endif
         
-        
         guard let context = context else {
             return nil
         }
@@ -136,6 +135,10 @@ public struct CoreGraphicsRenderer: Renderer {
             for subGeometry in multiGeometry.geometries() {
                 add(geometry: subGeometry, colorFill: colorFill)
             }
+            return
+        }
+        
+        if geometry is Point {
             return
         }
         

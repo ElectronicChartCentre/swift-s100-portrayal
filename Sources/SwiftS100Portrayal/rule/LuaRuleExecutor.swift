@@ -991,12 +991,16 @@ public class LuaRuleExecutor {
         let drawingInstructions = args.string
         let observedParameters = args.string
         
+        /*
         var ftcd: String = ""
         if let feature = featureById[featureId] {
             ftcd = feature.frid.ftcd
         }
         
         print("DEBUG: HostPortrayalEmit. featureId: \(featureId)(\(ftcd)), drawing instructions: \(drawingInstructions), observed parameters:  \(observedParameters)")
+         */
+        
+        // TODO: move DEF-parsingen out of the LuaRuleExecutor
         
         let def = DataExchangeFormat(drawingInstructions)
         for drawingCommand in DrawingCommandCreator.shared.create(def: def) {
