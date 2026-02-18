@@ -156,7 +156,7 @@ public struct CoreGraphicsRenderer: Renderer {
         
         if let polygonXY = geometryXY as? SwiftGeo.Polygon {
             context.addPath(path(polygonXY: polygonXY))
-            context.drawPath(using: .eoFillStroke)
+            context.drawPath(using: .fillStroke)
         } else {
             print("ERROR: unsupported geometry type \(geometryXY) for fill")
         }
@@ -377,8 +377,8 @@ public struct CoreGraphicsRenderer: Renderer {
         
         // clip to polygon
         context.addPath(path(polygonXY: polygonXY))
-        context.clip(using: .evenOdd)
-        
+        context.clip(using: .winding)
+
         // TODO: do not draw (that much) outside of image
         // TODO: use rest of v1/v2
 
@@ -404,7 +404,9 @@ public struct CoreGraphicsRenderer: Renderer {
     }
     
     private func append(path: CGMutablePath, ring: LinearRing) {
-        for (idx, point) in ring.coordinates.enumerated() {
+        // S-101 want outer as CW and inner as CCW. S-101 2.0 4.8.1
+        // CoreGraphics wants outer as CCW and inner as CW.
+        for (idx, point) in ring.coordinates.reversed().enumerated() {
             if idx == 0 {
                 path.move(to: CGPoint(x: CGFloat(point.x), y: CGFloat(point.y)))
             } else {
