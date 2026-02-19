@@ -9,6 +9,7 @@ struct ClearGeometry: GeometryCommand {
 
     static func handle(state: PortrayalState, args: [String]) -> DrawingCommand? {
         
+        state.geometryState.segments.removeAll()
         state.geometryState.spatialReferences.removeAll()
         state.geometryState.augmentedGeometry = nil
         

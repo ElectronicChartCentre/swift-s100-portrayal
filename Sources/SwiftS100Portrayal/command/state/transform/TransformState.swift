@@ -19,9 +19,12 @@ public class TransformState {
     var linePlacementOffset: Double = 0.5
     var linePlacementEndOffset: Double?
     var linePlacementVisibleParts: Bool = false
+    
+    var areaPlacement: AreaPlacementCommand.AreaPlacementMode = .VisibleParts
+    var areaCRS: AreaCRSCommand.AreaCRSType = .GlobalGeometry
 
     public func toRecord() -> Record {
-        return .init(rotationCRS: rotationCRS, rotation: rotation, scaleFactor: scaleFactor, localOffsetXMM: localOffsetXMM, localOffsetYMM: localOffsetYMM, linePlacementMode: linePlacementMode, linePlacementOffset: linePlacementOffset, linePlacementEndOffset: linePlacementEndOffset, linePlacementVisibleParts: linePlacementVisibleParts)
+        return .init(rotationCRS: rotationCRS, rotation: rotation, scaleFactor: scaleFactor, localOffsetXMM: localOffsetXMM, localOffsetYMM: localOffsetYMM, linePlacementMode: linePlacementMode, linePlacementOffset: linePlacementOffset, linePlacementEndOffset: linePlacementEndOffset, linePlacementVisibleParts: linePlacementVisibleParts, areaPlacement: areaPlacement, areaCRS: areaCRS)
     }
     
     public struct Record: Sendable {
@@ -38,6 +41,9 @@ public class TransformState {
         let linePlacementOffset: Double
         let linePlacementEndOffset: Double?
         let linePlacementVisibleParts: Bool
+        
+        let areaPlacement: AreaPlacementCommand.AreaPlacementMode
+        let areaCRS: AreaCRSCommand.AreaCRSType
         
     }
     

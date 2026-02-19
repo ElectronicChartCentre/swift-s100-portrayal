@@ -10,13 +10,13 @@ import SwiftGeo
 
 struct AugmentedPoint: GeometryCommand, HasGeometry {
     
-    let crs: String
+    let crs: CRSType
     let x: Int
     let y: Int
     
     func geometry(dsf: DataSetFile, geometry: Geometry, geometryCreator: GeometryCreator, renderer: any Renderer) -> Geometry? {
         
-        if crs != "GeographicCRS" {
+        if crs != .GeographicCRS {
             print("TODO: implement \(self.self) for \(crs)")
             return nil
         }
@@ -35,12 +35,15 @@ struct AugmentedPoint: GeometryCommand, HasGeometry {
             return nil
         }
         
-        let crs = args[0]
+        guard let crs = CRSType(rawValue: args[0]) else {
+            return nil
+        }
+
         guard let x = Int(args[1]), let y = Int(args[2]) else {
             return nil
         }
         
-        if crs != "GeographicCRS" {
+        if crs != .GeographicCRS {
             print("TODO: implement \(self.self) for \(crs)")
         }
         

@@ -10,6 +10,7 @@ import SwiftGeo
 
 public class GeometryState {
     
+    var segments: [SegmentListPart] = []
     var spatialReferences: [SpatialReference] = []
     var augmentedGeometry: HasGeometry?
 

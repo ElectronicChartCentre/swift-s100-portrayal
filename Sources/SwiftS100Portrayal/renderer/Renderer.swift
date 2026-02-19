@@ -8,6 +8,10 @@ import SwiftGeo
 
 public protocol Renderer {
     
+    var projection: Projection { get }
+    
+    var screenResolution: ScreenResolution { get }
+    
     func add(geometry: Geometry, drawingCommand: DrawingCommand)
     
     func asPNGData() -> Data?

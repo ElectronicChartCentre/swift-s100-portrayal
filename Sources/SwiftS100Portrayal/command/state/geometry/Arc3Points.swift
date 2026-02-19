@@ -5,6 +5,9 @@
 
 import Foundation
 
+import SwiftS101
+import SwiftGeo
+
 struct Arc3Points: GeometryCommand {
     
     static func handle(state: PortrayalState, args: [String]) -> DrawingCommand? {

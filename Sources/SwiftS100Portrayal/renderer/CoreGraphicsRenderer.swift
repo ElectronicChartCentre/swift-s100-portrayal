@@ -33,15 +33,19 @@ public struct CoreGraphicsRenderer: Renderer {
     private let widthPixel: Int
     private let heightPixel: Int
     private let pixelsPrPoint: Int
-    private let projection: Projection
+    public let projection: Projection
     private let colorPalette: ColorPalette
-    private let screenResolution: ScreenResolution
+    public let screenResolution: ScreenResolution
     private let portrayalCatalogue: PortrayalCatalogue
     
     private let largeBoundingBoxPixel: BoundingBox
     private let largeBoundingBoxWorld: BoundingBox
     
     private let geometryCreator = DefaultGeometryCreator()
+    
+    #if os(Linux)
+    var surface: Cairo.Surface.Image?
+    #endif
     
     public init(context: CGContext, widthPoint: Int, heightPoint: Int, pixelsPrPoint: Int, projection: Projection, colorPalette: ColorPalette, screenResolution: ScreenResolution, portrayalCatalogue: PortrayalCatalogue) {
         self.context = context
@@ -95,8 +99,9 @@ public struct CoreGraphicsRenderer: Renderer {
 
         #elseif os(Linux)
         do {
-            let surface = try Cairo.Surface.Image(format: .argb32, width: widthPixel, height: heightPixel)
-            context = try Silica.CGContext(surface: surface, size: CGSize(width: widthPixel, height: heightPixel))
+            let theSurface = try Cairo.Surface.Image(format: .argb32, width: widthPixel, height: heightPixel)
+            context = try Silica.CGContext(surface: theSurface, size: CGSize(width: widthPixel, height: heightPixel))
+            surface = theSurface
         } catch {
             print("ERROR: Failed to create CGContext for Linux with Silica. \(error)")
         }
@@ -444,6 +449,10 @@ public struct CoreGraphicsRenderer: Renderer {
         }
         
         var attributes: [NSAttributedString.Key : Any] = [:]
+
+        if textInstruction.textStyleState.fontSlant != .Upright {
+            print("TODO: text instruction \(textInstruction.textStyleState.fontSlant)")
+        }
         
         #if os(iOS) || os(tvOS) || os(macOS)
         if let color = cgcolor(textInstruction.textStyleState.fontColorToken, transparency: textInstruction.textStyleState.fontColorTransparency) {
@@ -457,12 +466,17 @@ public struct CoreGraphicsRenderer: Renderer {
         context.saveGState()
         context.translateBy(x: coordinateXY.x, y: coordinateXY.y)
         
+        // offset combination of vertical offset and local offset
+        var txmm: Double = 0
+        var tymm: Double = textInstruction.textStyleState.verticalOffset
         if let xmm = textInstruction.transformState.localOffsetXMM, let ymm = textInstruction.transformState.localOffsetYMM {
-            let xpx = screenResolution.pixels(mm: xmm)
-            let ypx = screenResolution.pixels(mm: ymm)
-            context.translateBy(x: xpx, y: ypx)
+            txmm += xmm
+            tymm += ymm
         }
-        
+        let txpx = screenResolution.pixels(mm: txmm)
+        let typx = screenResolution.pixels(mm: tymm)
+        context.translateBy(x: txpx, y: typx)
+
         context.textPosition = CGPoint(x: lineBounds.width * adjustFactorX, y: lineBounds.height * adjustFactorY)
         CTLineDraw(line, context)
         context.restoreGState()
@@ -480,6 +494,8 @@ public struct CoreGraphicsRenderer: Renderer {
             for subGeometryXY in multiGeometryXY.geometries() {
                 strokePath(subGeometryXY)
             }
+        } else if let arc = geometryXY as? ArcByRadius.Arc {
+            strokeArc(arc)
         } else {
             print("ERROR: unsupported geometry type \(geometryXY) for stroke")
         }
@@ -494,6 +510,14 @@ public struct CoreGraphicsRenderer: Renderer {
                 context.addLine(to: point)
             }
         }
+        context.strokePath()
+    }
+    
+    private func strokeArc(_ arc: ArcByRadius.Arc) {
+        let center = CGPoint(x: arc.center.x, y: arc.center.y)
+        let startAngle = arc.startAngle.asRadiansCCWPositiveX()
+        let endAngle = arc.endAngle.asRadiansCCWPositiveX()
+        context.addArc(center: center, radius: arc.radius, startAngle: startAngle, endAngle: endAngle, clockwise: true)
         context.strokePath()
     }
     
@@ -581,6 +605,20 @@ public struct CoreGraphicsRenderer: Renderer {
     }
     
     public func asPNGData() -> Data? {
+        
+        // for Linux try from surface first to try to reduce number of PNG-encodings..
+        #if os(Linux)
+        do {
+            if let surface = surface {
+                surface.flush()
+                return try surface.writePNG()
+            }
+        } catch {
+            print("ERROR: could not write PNG from surface: \(error)")
+        }
+        #endif
+        
+        
         guard let cgImage = context.makeImage() else {
             return nil
         }
