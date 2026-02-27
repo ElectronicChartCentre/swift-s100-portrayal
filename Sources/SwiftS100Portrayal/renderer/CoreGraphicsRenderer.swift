@@ -171,7 +171,7 @@ public struct CoreGraphicsRenderer: Renderer {
     
     private func add(geometry: Geometry, lineInstruction: LineInstruction) {
         
-        if geometry is Point || geometry is MultiPoint {
+        if geometry is Point || geometry is MultiPoint || geometry.isEmpty() {
             return
         }
         
@@ -486,6 +486,11 @@ public struct CoreGraphicsRenderer: Renderer {
     }
     
     private func strokePath(_ geometryXY: Geometry) {
+        
+        if geometryXY.isEmpty() {
+            return
+        }
+        
         if let lineXY = geometryXY as? LinearGeometry {
             strokePath(lineXY.coordinates)
         } else if let _ = geometryXY as? Point {

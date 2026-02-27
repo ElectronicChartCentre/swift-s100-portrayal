@@ -11,19 +11,11 @@ import SwiftS100FeatureCatalogue
 @testable import SwiftS100Portrayal
 
 struct LuaRuleExecutorTests {
-
-    @Test func testPortrayal101AA00DS0003() async throws {
-        try drawSingle(dataSetId: "101AA00DS0003")
-    }
-    
-    @Test func testPortrayal101AA00DS0015() async throws {
-        try drawSingle(dataSetId: "101AA00DS0015")
-    }
-    
-    @Test func testPortrayal101AA00DS0016() async throws {
-        try drawSingle(dataSetId: "101AA00DS0016")
-    }
         
+    @Test func testPortrayal101AA00DS0001() async throws {
+        try drawSingle(dataSetId: "101AA00DS0001")
+    }
+
     @Test func testPortrayalAllS101TestDatasets() async throws {
         // https://github.com/iho-ohi/S-101-Test-Datasets/tree/main/S-101_Test_DataSets/cells
         guard let folderURL = Bundle.module.url(forResource: "TestResources", withExtension: nil) else {
@@ -78,7 +70,7 @@ struct LuaRuleExecutorTests {
             Issue.record("Could not parse test data")
             return
         }
-
+                
         let lre = LuaRuleExecutor(portrayalCatalogue: pc, featureCatalogue: fc)
         lre.setUp(dsf: dsf)
         let featureDrawingCommands = lre.portrayal(features: dsf.featureTypeRecords())
@@ -105,8 +97,36 @@ struct LuaRuleExecutorTests {
             Issue.record("Could not create renderer")
             return
         }
-
+        
         let geometryCreator = DefaultGeometryCreator()
+        
+        // an extra run-through to find lines suppressing other lines..
+        let lineSuppressor = LineSuppressor(dsf: dsf, creator: geometryCreator)
+        for featureDrawingCommand in featureDrawingCommands {
+            let drawingCommand = featureDrawingCommand.drawingCommand
+            if !(drawingCommand is LineInstruction || drawingCommand is LineInstructionUnsuppressed) {
+                continue
+            }
+            
+            guard let recordIdentifier = LuaRuleExecutor.createRecordIdentifier(recordId: featureDrawingCommand.featureId) else {
+                Issue.record("Could not create record identifier from \(featureDrawingCommand.featureId)")
+                return
+            }
+            
+            guard let feature = dsf.record(forIdentifier: recordIdentifier) as? FeatureTypeRecord else {
+                Issue.record("Could not find feature record from \(recordIdentifier)")
+                return
+            }
+            
+            var geometry = feature.createGeometry(dsf: dsf, creator: geometryCreator)
+            
+            if let drawingCommandGeometry = featureDrawingCommand.drawingCommand.geometryState.geometry(dsf: dsf, geometry: geometry, geometryCreator: geometryCreator, renderer: renderer) {
+                geometry = drawingCommandGeometry
+            }
+            
+            lineSuppressor.add(featureRecordIdentifier: recordIdentifier, geometry: geometry)
+        }
+
         for featureDrawingCommand in featureDrawingCommands {
             guard let recordIdentifier = LuaRuleExecutor.createRecordIdentifier(recordId: featureDrawingCommand.featureId) else {
                 Issue.record("Could not create record identifier from \(featureDrawingCommand.featureId)")
@@ -122,6 +142,10 @@ struct LuaRuleExecutorTests {
             
             if let drawingCommandGeometry = featureDrawingCommand.drawingCommand.geometryState.geometry(dsf: dsf, geometry: geometry, geometryCreator: geometryCreator, renderer: renderer) {
                 geometry = drawingCommandGeometry
+            }
+            
+            if featureDrawingCommand.drawingCommand is LineInstruction  {
+                geometry = lineSuppressor.geometryAfterSuppression(featureRecordIdentifier: recordIdentifier, geometry: geometry)
             }
             
             renderer.add(geometry: geometry, drawingCommand: featureDrawingCommand.drawingCommand)
