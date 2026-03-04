@@ -24,6 +24,9 @@ import Silica
 import Cairo
 #endif
 
+/**
+ * A Renderer that can create PNG images using CoreGraphics on Apple platforms and Silica+Cairo on other platforms.
+ */
 public struct CoreGraphicsRenderer: Renderer {
 
     private let context: CGContext
@@ -609,14 +612,15 @@ public struct CoreGraphicsRenderer: Renderer {
         return nil
     }
     
-    public func asPNGData() -> Data? {
+    public func output() -> RendererOutput? {
         
         // for Linux try from surface first to try to reduce number of PNG-encodings..
         #if os(Linux)
         do {
             if let surface = surface {
                 surface.flush()
-                return try surface.writePNG()
+                let imageData = try surface.writePNG()
+                return RendererOutput(data: imageData, contentType: "image/png")
             }
         } catch {
             print("ERROR: could not write PNG from surface: \(error)")
@@ -637,7 +641,11 @@ public struct CoreGraphicsRenderer: Renderer {
         imageData = bitmapRep.representation(using: .png, properties: [:])
         #endif
         
-        return imageData
+        if let imageData {
+            return RendererOutput(data: imageData, contentType: "image/png")
+        }
+        
+        return nil
     }
     
 }

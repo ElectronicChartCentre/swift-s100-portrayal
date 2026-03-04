@@ -151,13 +151,13 @@ struct LuaRuleExecutorTests {
             renderer.add(geometry: geometry, drawingCommand: featureDrawingCommand.drawingCommand)
         }
         
-        guard let imageData = renderer.asPNGData() else {
+        guard let output = renderer.output() else {
             Issue.record("Could not encode as PNG")
             return
         }
         
         do {
-            try imageData.write(to: URL(fileURLWithPath: "/tmp/\(dataSetId).000.png"))
+            try output.data.write(to: URL(fileURLWithPath: "/tmp/\(dataSetId).000.png"))
         } catch {
             Issue.record("Could not write PNG. \(error)")
             return

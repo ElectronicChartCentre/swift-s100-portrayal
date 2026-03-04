@@ -41,7 +41,7 @@ struct AttributePath {
 
         var atvls: [String] = []
         for child in children {
-            if let attr = child.attr {
+            if let attr = child.attr() {
                 atvls.append(attr.atvl)
             }
         }
