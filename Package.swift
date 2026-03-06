@@ -23,6 +23,9 @@ let package = Package(
         //.package(url: "https://github.com/PureSwift/Silica", branch: "master"),
         .package(url: "https://github.com/halset/Silica", branch: "work"),
         //.package(path: "../ext/Silica"),
+        .package(url: "https://github.com/ElectronicChartCentre/swift-vector-tile", branch: "main"),
+        //.package(path: "../swift-vector-tile"),
+        .package(url: "https://github.com/halset-bot/mlt-swift", branch: "main"),
     ],
     targets: [
         .target(
@@ -31,7 +34,9 @@ let package = Package(
                 .product(name: "SwiftS101", package: "swift-s101"),
                 .product(name: "SwiftS100FeatureCatalogue", package: "swift-s100-feature-catalogue"),
                 .product(name: "SwiftyLua", package: "SwiftyLua"),
-                .product(name: "Silica", package: "Silica", condition: .when(platforms: [.linux]))
+                .product(name: "Silica", package: "Silica", condition: .when(platforms: [.linux])),
+                .product(name: "SwiftVectorTile", package: "swift-vector-tile"),
+                .product(name: "MLTEncoder", package: "mlt-swift"),
             ],
         ),
         .testTarget(
