@@ -1004,7 +1004,8 @@ public class LuaRuleExecutor {
         
         let def = DataExchangeFormat(drawingInstructions)
         for drawingCommand in DrawingCommandCreator.shared.create(def: def) {
-            let featureDrawingCommand = FeatureDrawingCommand(featureId: featureId, drawingCommand: drawingCommand)
+            let drawingCommandId = "\(featureId)-\(self.drawingCommands.count)"
+            let featureDrawingCommand = FeatureDrawingCommand(featureId: featureId, drawingCommandId: drawingCommandId, drawingCommand: drawingCommand)
             self.drawingCommands.append(featureDrawingCommand)
         }
         

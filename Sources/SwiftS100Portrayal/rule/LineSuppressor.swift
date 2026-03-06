@@ -10,22 +10,16 @@ import SwiftGeo
 
 public class LineSuppressor {
     
-    private let dsf: DataSetFile
     private let creator: GeometryCreator
     
-    private var latestFeatureIdByRecordId: [RecordIdentifier: RecordIdentifier] = [:]
-    private var allRecordIdsByFeatureId: [RecordIdentifier: Set<RecordIdentifier>] = [:]
+    private var priorityDrawingCommandIdBySpatialRecordId: [RecordIdentifier: String] = [:]
+    private var allSpatialRecordIdsByDrawingCommandId: [String: Set<RecordIdentifier>] = [:]
     
-    public init(dsf: DataSetFile, creator: GeometryCreator) {
-        self.dsf = dsf
+    public init(creator: GeometryCreator) {
         self.creator = creator
     }
     
-    public func add(featureRecordIdentifier: RecordIdentifier, geometry: Geometry) {
-        guard let _ = dsf.record(forIdentifier: featureRecordIdentifier) as? FeatureTypeRecord else {
-            return
-        }
-        
+    public func add(drawingCommandId: String, geometry: Geometry) {
         let refs = geometry.refs()
         if refs.isEmpty {
             return
@@ -34,18 +28,14 @@ public class LineSuppressor {
         var recordIdentifiers: Set<RecordIdentifier> = []
         for ref in refs {
             if let recordIdentifier = ref as? RecordIdentifier {
-                latestFeatureIdByRecordId[recordIdentifier] = featureRecordIdentifier
+                priorityDrawingCommandIdBySpatialRecordId[recordIdentifier] = drawingCommandId
                 recordIdentifiers.insert(recordIdentifier)
             }
         }
-        allRecordIdsByFeatureId[featureRecordIdentifier] = recordIdentifiers
+        allSpatialRecordIdsByDrawingCommandId[drawingCommandId] = recordIdentifiers
     }
     
-    public func geometryAfterSuppression(featureRecordIdentifier: RecordIdentifier, geometry: Geometry) -> Geometry {
-        
-        guard let _ = dsf.record(forIdentifier: featureRecordIdentifier) as? FeatureTypeRecord else {
-            return creator.createEmptyGeometry()
-        }
+    public func geometryAfterSuppression(drawingCommandId: String, geometry: Geometry) -> Geometry {
         
         if geometry.refs().isEmpty {
             return geometry
@@ -53,8 +43,8 @@ public class LineSuppressor {
         
         var recordIdentifiersToInclude = Set<RecordIdentifier>()
         var recordIdentifiersToExclude = Set<RecordIdentifier>()
-        for recordId in allRecordIdsByFeatureId[featureRecordIdentifier] ?? [] {
-            if latestFeatureIdByRecordId[recordId] == featureRecordIdentifier {
+        for recordId in allSpatialRecordIdsByDrawingCommandId[drawingCommandId] ?? [] {
+            if priorityDrawingCommandIdBySpatialRecordId[recordId] == drawingCommandId {
                 recordIdentifiersToInclude.insert(recordId)
             } else {
                 recordIdentifiersToExclude.insert(recordId)
@@ -70,25 +60,32 @@ public class LineSuppressor {
         }
         
         // then the partly
-        if let _ = geometry as? LinearGeometry {
-            // single one to exclude
-            return creator.createEmptyGeometry()
-        } else if let polygon = geometry as? Polygon {
-            var geometries: [Geometry] = []
-            if let ref = polygon.shell.ref as? RecordIdentifier, recordIdentifiersToInclude.contains(ref) {
-                geometries.append(polygon.shell)
-            }
-            for hole in polygon.holes {
-                if let ref = hole.ref as? RecordIdentifier, recordIdentifiersToInclude.contains(ref) {
-                    geometries.append(hole)
-                }
-            }
-            return creator.createGeometry(geometries: geometries)
-        } else {
-            print("TODO: LineSuppressor geometryAfterSuppression add support for \(type(of: geometry))")
+        var lines: [any LinearGeometry] = []
+        findLinearGeometries(in: geometry, recordIdentifiersToInclude: recordIdentifiersToInclude, appendTo: &lines)
+        return creator.createGeometry(geometries: lines)
+    }
+    
+    private func findLinearGeometries(in geometry: Geometry, recordIdentifiersToInclude: Set<RecordIdentifier>, appendTo result: inout [any LinearGeometry]) {
+        
+        if let line = geometry as? LinearGeometry, let ref = line.ref as? RecordIdentifier, recordIdentifiersToInclude.contains(ref) {
+            result.append(line)
+            return
         }
         
-        return creator.createEmptyGeometry()
+        if let polygon = geometry as? Polygon {
+            findLinearGeometries(in: polygon.shell, recordIdentifiersToInclude: recordIdentifiersToInclude, appendTo: &result)
+            for hole in polygon.holes {
+                findLinearGeometries(in: hole, recordIdentifiersToInclude: recordIdentifiersToInclude, appendTo: &result)
+            }
+            return
+        }
+        
+        if let multiGeometry = geometry as? MultiGeometry {
+            for subGeometry in multiGeometry.geometries() {
+                findLinearGeometries(in: subGeometry, recordIdentifiersToInclude: recordIdentifiersToInclude, appendTo: &result)
+            }
+            return
+        }
     }
     
 }

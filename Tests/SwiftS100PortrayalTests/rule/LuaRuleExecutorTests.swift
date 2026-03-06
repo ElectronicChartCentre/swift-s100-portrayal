@@ -12,11 +12,23 @@ import SwiftS100FeatureCatalogue
 
 struct LuaRuleExecutorTests {
         
-    @Test func testPortrayal101AA00DS0001() async throws {
-        try drawSingle(dataSetId: "101AA00DS0001")
-    }
-
     @Test func testPortrayalAllS101TestDatasets() async throws {
+        
+        guard let pc = PortrayalCatalogueParser.parse(bundle: Bundle.module, portrayalCataloguePath: "TestResources/101_PC_2.0.0") else {
+            Issue.record("Could not find or parse S-101 portrayal catalogue")
+            return
+        }
+
+        guard let featureCatalogueXMLURL = Bundle.module.url(forResource: "TestResources/101_Feature_Catalogue_2.0.0", withExtension: "xml") else {
+            Issue.record("could not find S-101 portrayal catalogue XML file")
+            return
+        }
+        
+        guard let fc = FeatureCatalogueParser.parse(url: featureCatalogueXMLURL) else {
+            Issue.record("Could not parse S-101 feature catalogue")
+            return
+        }
+        
         // https://github.com/iho-ohi/S-101-Test-Datasets/tree/main/S-101_Test_DataSets/cells
         guard let folderURL = Bundle.module.url(forResource: "TestResources", withExtension: nil) else {
             Issue.record("Could not find TestResources directory")
@@ -36,7 +48,7 @@ struct LuaRuleExecutorTests {
                 }
                 
                 let dataSetId = String(fileName.split(separator: ".")[0])
-                try drawSingle(dataSetId: dataSetId)
+                try drawSingle(portrayalCatalogue: pc, featureCatalogue: fc, dataSetId: dataSetId)
             }
         } catch {
             Issue.record("Trouble iterating files")
@@ -44,21 +56,7 @@ struct LuaRuleExecutorTests {
         }
     }
     
-    func drawSingle(dataSetId: String) throws {
-        guard let pc = PortrayalCatalogueParser.parse(bundle: Bundle.module, portrayalCataloguePath: "TestResources/101_PC_2.0.0") else {
-            Issue.record("Could not find or parse S-101 portrayal catalogue")
-            return
-        }
-
-        guard let featureCatalogueXMLURL = Bundle.module.url(forResource: "TestResources/101_Feature_Catalogue_2.0.0", withExtension: "xml") else {
-            Issue.record("could not find S-101 portrayal catalogue XML file")
-            return
-        }
-        
-        guard let fc = FeatureCatalogueParser.parse(url: featureCatalogueXMLURL) else {
-            Issue.record("Could not parse S-101 feature catalogue")
-            return
-        }
+    func drawSingle(portrayalCatalogue pc: PortrayalCatalogue, featureCatalogue fc: FeatureCatalogue, dataSetId: String) throws {
 
         guard let testDataURL = Bundle.module.url(forResource: "TestResources/\(dataSetId)", withExtension: "000") else {
             Issue.record("Could not load test data")
@@ -101,7 +99,7 @@ struct LuaRuleExecutorTests {
         let geometryCreator = DefaultGeometryCreator()
         
         // an extra run-through to find lines suppressing other lines..
-        let lineSuppressor = LineSuppressor(dsf: dsf, creator: geometryCreator)
+        let lineSuppressor = LineSuppressor(creator: geometryCreator)
         for featureDrawingCommand in featureDrawingCommands {
             let drawingCommand = featureDrawingCommand.drawingCommand
             if !(drawingCommand is LineInstruction || drawingCommand is LineInstructionUnsuppressed) {
@@ -124,7 +122,7 @@ struct LuaRuleExecutorTests {
                 geometry = drawingCommandGeometry
             }
             
-            lineSuppressor.add(featureRecordIdentifier: recordIdentifier, geometry: geometry)
+            lineSuppressor.add(drawingCommandId: featureDrawingCommand.drawingCommandId, geometry: geometry)
         }
 
         for featureDrawingCommand in featureDrawingCommands {
@@ -145,7 +143,7 @@ struct LuaRuleExecutorTests {
             }
             
             if featureDrawingCommand.drawingCommand is LineInstruction  {
-                geometry = lineSuppressor.geometryAfterSuppression(featureRecordIdentifier: recordIdentifier, geometry: geometry)
+                geometry = lineSuppressor.geometryAfterSuppression(drawingCommandId: featureDrawingCommand.drawingCommandId, geometry: geometry)
             }
             
             renderer.add(geometry: geometry, drawingCommand: featureDrawingCommand.drawingCommand)

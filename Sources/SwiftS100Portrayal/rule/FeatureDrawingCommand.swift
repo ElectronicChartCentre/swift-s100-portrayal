@@ -8,6 +8,7 @@ import Foundation
 public struct FeatureDrawingCommand {
     
     public let featureId: String
-    public let drawingCommand: DrawingCommand
+    public let drawingCommandId: String
+    public let drawingCommand: any DrawingCommand
     
 }
