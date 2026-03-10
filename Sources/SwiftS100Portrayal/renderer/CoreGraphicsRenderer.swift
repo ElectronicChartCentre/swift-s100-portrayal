@@ -286,7 +286,7 @@ public struct CoreGraphicsRenderer: Renderer {
             svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
             context.restoreGState()
         } else if let multiPointXY = geometryXY as? MultiPoint {
-            for coordinateXY in multiPointXY.coordinates() {
+            for coordinateXY in multiPointXY.coordinates {
                 
                 if !largeBoundingBoxPixel.intersects(coordinateXY) {
                     continue
@@ -509,8 +509,8 @@ public struct CoreGraphicsRenderer: Renderer {
         }
     }
     
-    private func strokePath(_ coordinates: [any Coordinate]) {
-        for (idx, coordinate) in coordinates.enumerated() {
+    private func strokePath(_ coordinates: any CoordinateSequence) {
+        for (idx, coordinate) in Array(coordinates).enumerated() {
             let point = CGPoint(x: coordinate.x, y: coordinate.y)
             if idx == 0 {
                 context.move(to:point)
@@ -542,7 +542,7 @@ public struct CoreGraphicsRenderer: Renderer {
             let symbolHalfWidthPx = screenResolution.pixels(mm: svg.width / 2.0)
             var distanceToNextSymbolPx = screenResolution.pixels(mm: lineSymbol.position)
             
-            for (i, segmentEndXY) in lineXY.coordinates.enumerated() {
+            for (i, segmentEndXY) in Array(lineXY.coordinates).enumerated() {
                 if i == 0 {
                     continue
                 }

@@ -131,10 +131,6 @@ struct ArcByRadius: GeometryCommand, SegmentListPart {
             return Arc(center: newCenter, radius: newRadius, startAngle: startAngle, endAngle: endAngle)
         }
         
-        func refs() -> [any Hashable] {
-            return []
-        }
-        
     }
     
 }
