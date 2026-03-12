@@ -19,11 +19,11 @@ public class VisibilityState {
     
     public struct Record: Sendable {
         
-        var scaleMinimum: Int?
-        var scaleMaximum: Int?
-        var displayPlaneIsOverRadar = false
-        var drawingPriority: Int = 0
-        var viewingGroups: Set<Int>
+        public let scaleMinimum: Int?
+        public let scaleMaximum: Int?
+        public let displayPlaneIsOverRadar: Bool
+        public let drawingPriority: Int
+        public let viewingGroups: Set<Int>
         
     }
     
