@@ -386,12 +386,21 @@ public struct CoreGraphicsRenderer: Renderer {
         // clip to polygon
         context.addPath(path(polygonXY: polygonXY))
         context.clip(using: .winding)
-
-        // TODO: do not draw (that much) outside of image
+        
         // TODO: use rest of v1/v2
-
+        
         for x in stride(from: bboxXY.minX, to: bboxXY.maxX, by: v1px) {
+            
+            if x + v1px < 0 || x - v1px > projection.widthPixel {
+                continue
+            }
+            
             for y in stride(from: bboxXY.minY, to: bboxXY.maxY, by: v2py) {
+                
+                if y + v2py < 0 || y - v2py > projection.heightPixel {
+                    continue
+                }
+                
                 context.saveGState()
                 context.translateBy(x: x, y: y)
                 svg.draw(context: context, screenResolution: screenResolution, colorPalette: colorPalette)
