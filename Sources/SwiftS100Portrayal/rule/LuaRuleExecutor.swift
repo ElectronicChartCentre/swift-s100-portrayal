@@ -636,7 +636,7 @@ public class LuaRuleExecutor {
         }
 
         var associatedInformationIds: Set<String> = []
-        for inas in spatial.inass() {
+        for inas in spatial.inass {
             
             if inas.iacd != associationCode {
                 continue
@@ -871,21 +871,21 @@ public class LuaRuleExecutor {
         }
         
         if let pointRecord = record as? PointRecord {
-            if let c2it = pointRecord.c2it() {
+            if let c2it = pointRecord.c2it {
                 return .value(luaCreatePoint(xcoo: c2it.xcoo, ycoo: c2it.ycoo, zcoo: nil))
-            } else if let c3it = pointRecord.c3it() {
+            } else if let c3it = pointRecord.c3it {
                 return .value(luaCreatePoint(xcoo: c3it.xcoo, ycoo: c3it.ycoo, zcoo: c3it.zcoo))
             } else {
                 return .nothing
             }
         } else if let multiPointRecord = record as? MultiPointRecord {
             var points: [Value] = []
-            for c2il in multiPointRecord.c2ils() {
+            for c2il in multiPointRecord.c2ils {
                 if let p = luaCreatePoint(xcoo: c2il.xcoo, ycoo: c2il.ycoo, zcoo: nil) {
                     points.append(p)
                 }
             }
-            for c3il in multiPointRecord.c3ils() {
+            for c3il in multiPointRecord.c3ils {
                 for c3it in c3il.c3its {
                     if let p = luaCreatePoint(xcoo: c3it.xcoo, ycoo: c3it.ycoo, zcoo: c3it.zcoo) {
                         points.append(p)
@@ -896,7 +896,7 @@ public class LuaRuleExecutor {
         } else if let surfaceRecord = record as? SurfaceRecord {
             var exteriorRing: Value? = nil
             var interiorRings: [Value] = []
-            for rias in surfaceRecord.riass() {
+            for rias in surfaceRecord.riass {
                 switch rias.usag {
                 case RIAS.usagExterior:
                     if exteriorRing != nil {
@@ -916,9 +916,9 @@ public class LuaRuleExecutor {
             var segments: [Value] = []
             var startPoint: Value? = nil
             var endPoint: Value? = nil
-            for segment in curveRecord.segments() {
+            for segment in curveRecord.segments {
                 var controlPoints: [any Value] = []
-                for c2il in segment.c2ils() {
+                for c2il in segment.c2ils {
                     if let controlPoint = luaCreatePoint(xcoo: c2il.xcoo, ycoo: c2il.ycoo, zcoo: nil) {
                         controlPoints.append(controlPoint)
                         
@@ -936,7 +936,7 @@ public class LuaRuleExecutor {
             return .value(luaCreateCurve(startPoint: startPoint, endPoint: endPoint, segments: segments))
         } else if let compositeCurveRecord = record as? CompositeCurveRecord {
             var associations: [Value] = []
-            for cuco in compositeCurveRecord.cucos() {
+            for cuco in compositeCurveRecord.cucos {
                 if let association = luaCreateSpatialAssociation(cuco) {
                     associations.append(association)
                 }

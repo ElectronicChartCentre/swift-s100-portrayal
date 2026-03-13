@@ -63,11 +63,12 @@ struct LuaRuleExecutorTests {
             return
         }
 
-        let (dsf, _) = DataSetFileParser.parse(fileName: "\(dataSetId).000", data: try Data.init(contentsOf: testDataURL))
-        guard let dsf = dsf else {
+        let (dsfb, _) = DataSetFileParser.parse(fileName: "\(dataSetId).000", data: try Data.init(contentsOf: testDataURL))
+        guard let dsfb = dsfb else {
             Issue.record("Could not parse test data")
             return
         }
+        let dsf = dsfb.build()
                 
         let lre = LuaRuleExecutor(portrayalCatalogue: pc, featureCatalogue: fc)
         lre.setUp(dsf: dsf)

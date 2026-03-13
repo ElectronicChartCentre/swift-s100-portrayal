@@ -387,6 +387,7 @@ public struct CoreGraphicsRenderer: Renderer {
         context.addPath(path(polygonXY: polygonXY))
         context.clip(using: .winding)
         
+        // TODO: use proper area fill origin
         // TODO: use rest of v1/v2
         
         for x in stride(from: bboxXY.minX, to: bboxXY.maxX, by: v1px) {
