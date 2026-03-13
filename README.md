@@ -19,8 +19,8 @@ Take a look at the tests for examples on how to use.
 * Only S-101 for now.
 * Works on iOS, macOS and Linux. However, non-Apple platforms are missing text now.
 * CoreGraphicsRenderer for PNG is the best Renderer now. The VectorTileRenderer is not usable yet.
-* LLXY and WebMercator projection, but easy Projection protocol to add more.
-* Early phase, so API will change.
+* LLXY and WebMercator projection, but easy to implement Projection protocol.
+* Early phase, so not complete and API will change.
 
 ## License
 
