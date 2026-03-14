@@ -5,7 +5,6 @@
 
 import Foundation
 import SwiftGeo
-import MLTEncoder
 import SwiftVectorTile
 import OrderedCollections
 
