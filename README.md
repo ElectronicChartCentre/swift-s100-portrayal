@@ -11,7 +11,8 @@ Take a look at the tests for examples on how to use.
 ## Performance tips
 
 * Cache S-101 DataSetFile.
-* Cache Lua DrawingCommands.
+* Cache Lua DrawingCommands in groups by feature id - and remember to check for changed context parameters.
+* DataSetFile, records, drawing commands, geometries are all Sendable.
 
 ## Status
 
