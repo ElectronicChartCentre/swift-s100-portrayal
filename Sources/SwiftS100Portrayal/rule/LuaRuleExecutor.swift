@@ -167,6 +167,12 @@ public class LuaRuleExecutor {
         // commands, then it will need to sort again
         drawingCommands.sort()
         
+        // Run a full Lua GC cycle to reclaim tables and other temporaries
+        // created during portrayal.  Without this, Lua's incremental
+        // collector falls behind when portrayal() is called repeatedly
+        // (e.g. every tile render), causing unbounded memory growth.
+        lua.collectGarbage()
+        
         return drawingCommands
     }
     
@@ -316,41 +322,60 @@ public class LuaRuleExecutor {
         return .value(toLuaTable(featureCatalogue.featureAssociationByCode.keys.sorted()))
     }
     
+    // Cache of compiled Lua wrapper functions, keyed by "functionName:nilPattern"
+    // where nilPattern is a string of 'v' (value) and 'n' (nil) characters,
+    // one per argument position.  Caching avoids recompiling the same Lua
+    // chunk on every call, which was the primary source of memory growth.
+    private var callFunctionCache: [String: Function] = [:]
+
     /**
-     * To make it easier to call Lua including handling of nil arguments
+     * To make it easier to call Lua including handling of nil arguments.
+     *
+     * The compiled wrapper chunk is cached and reused on every subsequent
+     * call with the same function name and nil-pattern, so `luaL_loadstring`
+     * is invoked at most once per unique (functionName, nil-pattern) pair.
      */
     private func call(_ functionName: String, _ args: [Value?]) -> Value? {
         
         var nonNilArgs: [Value] = []
+        var placeholders: [String] = []
         
-        var luaCode = "local args = {...} \n return \(functionName)("
         for arg in args {
             if let arg = arg {
-                luaCode.append("args[\(nonNilArgs.count + 1)]")
                 nonNilArgs.append(arg)
+                placeholders.append("args[\(nonNilArgs.count)]")
             } else {
-                luaCode.append("nil")
+                placeholders.append("nil")
             }
-            luaCode.append(", ")
         }
-        if luaCode.hasSuffix(", ") {
-            luaCode.removeLast(2)
-        }
-        luaCode.append(")")
         
-        do {
-            let result = try lua.execute(string: luaCode, args: nonNilArgs)
-            if case .values(let values) = result, values.count == 1, let v = values.first {
-                return v
+        // Build a cache key that encodes the function name and which positions
+        // are nil so the same compiled chunk can be reused across calls.
+        let nilPattern = args.map { $0 == nil ? "n" : "v" }.joined()
+        let cacheKey = "\(functionName):\(nilPattern)"
+        
+        let fn: Function
+        if let cached = callFunctionCache[cacheKey] {
+            fn = cached
+        } else {
+            let luaCode = "local args = {...}\nreturn \(functionName)(\(placeholders.joined(separator: ", ")))"
+            switch lua.vm.createFunction(luaCode) {
+            case .value(let f):
+                callFunctionCache[cacheKey] = f
+                fn = f
+            case .error(let message):
+                print("ERROR: \(functionName) compile problem. \(message)")
+                return nil
             }
-            
-            if debug {
-                print("DEBUG: \(functionName) returned nil")
-            }
-            
-            return nil
-        } catch {
-            print("ERROR: \(functionName) problem. \(error)")
+        }
+        
+        let result = fn.call(nonNilArgs)
+        if case .values(let values) = result, values.count == 1, let v = values.first {
+            return v
+        }
+        
+        if debug {
+            print("DEBUG: \(functionName) returned nil")
         }
         
         return nil
