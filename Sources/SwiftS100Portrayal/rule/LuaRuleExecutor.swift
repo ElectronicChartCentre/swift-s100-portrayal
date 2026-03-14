@@ -105,6 +105,23 @@ public class LuaRuleExecutor {
         lua.registerFunction(.init(name: "HostPortrayalEmit", parameters: [String.arg, String.arg, String.arg], fn: { [weak self] args in self?.HostPortrayalEmit(args) ?? .nothing }))
     }
     
+    deinit {
+        // lua4swift's StoredValue uses `unowned var vm: VirtualMachine`.
+        // Swift does not guarantee the order in which stored properties are
+        // released after deinit, so any cache that holds StoredValue objects
+        // (Function, Table, etc.) might outlive VirtualMachine — causing an
+        // "unowned reference was already deallocated" crash on deinit.
+        //
+        // By clearing them explicitly here, while the deinit body is still
+        // executing and ALL stored properties (including `lua`) are guaranteed
+        // to still be alive, we ensure StoredValue.deinit can safely call
+        // vm.unref() without the VM already being gone.
+        callFunctionCache.removeAll()
+        _luaCreateFeatureType.removeAll()
+        _luaCreateSimpleAttribute.removeAll()
+        _luaGetUnknownAttributeString = nil
+    }
+
     public func clearState() {
         featureById.removeAll()
         drawingCommands.removeAll()
