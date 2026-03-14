@@ -13,9 +13,9 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/ElectronicChartCentre/swift-s101", branch: "main"),
+        .package(url: "https://github.com/ElectronicChartCentre/swift-s101", from: "0.0.1"),
         //.package(path: "../swift-s101"),
-        .package(url: "https://github.com/ElectronicChartCentre/swift-s100-feature-catalogue", branch: "main"),
+        .package(url: "https://github.com/ElectronicChartCentre/swift-s100-feature-catalogue", from: "0.0.1"),
         //.package(path: "../swift-s100-feature-catalogue"),
         //.package(url: "https://github.com/SwiftyLua/SwiftyLua", from: "0.1.0"),
         .package(url: "https://github.com/halset/SwiftyLua", branch: "toretemp"),
@@ -23,7 +23,7 @@ let package = Package(
         //.package(url: "https://github.com/PureSwift/Silica", branch: "master"),
         .package(url: "https://github.com/halset/Silica", branch: "work"),
         //.package(path: "../ext/Silica"),
-        .package(url: "https://github.com/ElectronicChartCentre/swift-vector-tile", branch: "main"),
+        .package(url: "https://github.com/ElectronicChartCentre/swift-vector-tile", from: "0.0.1"),
         //.package(path: "../swift-vector-tile"),
     ],
     targets: [
