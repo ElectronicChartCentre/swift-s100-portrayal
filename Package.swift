@@ -25,7 +25,6 @@ let package = Package(
         //.package(path: "../ext/Silica"),
         .package(url: "https://github.com/ElectronicChartCentre/swift-vector-tile", branch: "main"),
         //.package(path: "../swift-vector-tile"),
-        .package(url: "https://github.com/halset-bot/mlt-swift", branch: "main"),
     ],
     targets: [
         .target(
@@ -36,7 +35,6 @@ let package = Package(
                 .product(name: "SwiftyLua", package: "SwiftyLua"),
                 .product(name: "Silica", package: "Silica", condition: .when(platforms: [.linux])),
                 .product(name: "SwiftVectorTile", package: "swift-vector-tile"),
-                .product(name: "MLTEncoder", package: "mlt-swift"),
             ],
         ),
         .testTarget(

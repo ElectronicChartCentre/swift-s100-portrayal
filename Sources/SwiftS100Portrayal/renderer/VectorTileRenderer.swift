@@ -23,7 +23,6 @@ public class VectorTileRenderer: Renderer {
     
     public enum VectorTileVariant {
         case MVT
-        case MLT
     }
     
     public init(projection: WebMercatorTile, colorPalette: ColorPalette, screenResolution: ScreenResolution, portrayalCatalogue: PortrayalCatalogue, variant: VectorTileVariant) {
@@ -35,8 +34,6 @@ public class VectorTileRenderer: Renderer {
         switch variant {
         case .MVT:
             self.encoder = MVTEncoderHelper(projection: self.projection)
-        case .MLT:
-            self.encoder = MLTEncoderHelper(projection: self.projection)
         }
     }
     
@@ -195,113 +192,3 @@ private class MVTEncoderHelper: VTEncoder {
     }
     
 }
-
-private class MLTEncoderHelper: VTEncoder {
-    
-    let projection: Projection
-    
-    var name: String?
-    var properties: [String: MLTPropertyValue] = [:]
-    var geometry: Geometry?
-    
-    private var layerByName: [String: MLTLayerStaging] = [:]
-    
-    init(projection: Projection) {
-        self.projection = projection
-    }
-    
-    func startFeature(name: String) {
-        self.name = name
-        self.properties.removeAll()
-        self.geometry = nil
-    }
-    
-    func setAttribute(name: String, value: Any) {
-        if let s = value as? String {
-            properties[name] = .string(s)
-        } else if let i = value as? Int {
-            properties[name] = .int64(Int64(i))
-        } else if let f = value as? Float {
-            properties[name] = .float(f)
-        } else if let d = value as? Double {
-            properties[name] = .double(d)
-        } else {
-            print("TODO: unsupported MLT attribute type: \(type(of: value))")
-        }
-    }
-    
-    func setGeometry(_ geometry: Geometry) {
-        self.geometry = geometry
-    }
-    
-    func appendFeature() {
-        if let name, let geometry {
-            layer(name).add(geometry: geometry, properties: properties)
-        }
-        self.name = nil
-        self.properties.removeAll()
-        self.geometry = nil
-    }
-    
-    private func layer(_ name: String) -> MLTLayerStaging {
-        if let layer = layerByName[name] {
-            return layer
-        }
-        let newLayer = MLTLayerStaging(name: name)
-        layerByName[name] = newLayer
-        return newLayer
-    }
-    
-    func output() -> RendererOutput? {
-        
-        // not projecting here as MLTEncoder uses SwiftGeo.WebMercatorTile and y-axis flipping by itself, but this
-        // code is to fetch the tile xyz.
-        guard let projection = projection as? FlipScreenYProjection, let tile = projection.wrappedProjection as? WebMercatorTile else {
-            return nil
-        }
-        
-        var layers: [MLTLayer] = []
-        for (name, layer) in layerByName {
-            layers.append(MLTLayer(name: name, features: layer.features))
-        }
-        
-        let encoder = MLTEncoder()
-        do {
-            let data: Data = try encoder.encode(
-                layers: layers,
-                tileZ: tile.z, tileX: tile.x, tileY: tile.y
-            )
-            
-            //let hex = data.map { String(format: "%02hhx", $0) }.joined()
-            //print(hex)
-            
-            return RendererOutput(data: data, contentType: "application/vnd.maplibre-vector-tile")
-        } catch {
-            print("ERROR: could not encode mlt. \(error)")
-            return nil
-        }
-    }
-    
-}
-
-private class MLTLayerStaging {
-    
-    let name: String
-    var features: [MLTFeature] = []
-    
-    init(name: String) {
-        self.name = name
-    }
-    
-    func add(geometry: Geometry, properties: [String: MLTPropertyValue]) {
-        if let multiGeometry = geometry as? MultiGeometry {
-            for subGeometry in multiGeometry.geometries() {
-                add(geometry: subGeometry, properties: properties)
-            }
-            return
-        }
-        features.append(MLTFeature(geometry: geometry, properties: properties))
-    }
-    
-}
-
