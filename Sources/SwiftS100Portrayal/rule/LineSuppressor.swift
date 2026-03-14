@@ -34,7 +34,7 @@ public class LineSuppressor {
     
     public func geometryAfterSuppression(drawingCommandId: String, geometry: Geometry) -> Geometry {
         
-        var allLineRecordIdentifiersForDrawingCommand = allLineRecordIdentifiersByDrawingCommand[drawingCommandId] ?? []
+        let allLineRecordIdentifiersForDrawingCommand = allLineRecordIdentifiersByDrawingCommand[drawingCommandId] ?? []
         
         if allLineRecordIdentifiersForDrawingCommand.isEmpty {
             return geometry
