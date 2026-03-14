@@ -155,9 +155,6 @@ public class LuaRuleExecutor {
             return []
         }
         
-        // TODO: cache drawing commands pr feature id and observed context parameter(s)?
-        // TODO: or should that be done outside of this class?
-        
         var featureIdsToPortray: Set<String> = []
         for feature in features {
             let featureId = LuaRuleExecutor.createRecordId(dsf: dsf, record: feature)
@@ -166,24 +163,14 @@ public class LuaRuleExecutor {
         
         let _ = call("PortrayalMain", [toLuaTable(featureIdsToPortray.sorted())])
         
-        // try to sort.
-        drawingCommands.sort { (lhs: FeatureDrawingCommand, rhs: FeatureDrawingCommand) -> Bool in
-
-            if lhs.drawingCommand.visibilityState.displayPlaneIsOverRadar != rhs.drawingCommand.visibilityState.displayPlaneIsOverRadar {
-                return !lhs.drawingCommand.visibilityState.displayPlaneIsOverRadar
-            }
-            
-            if lhs.drawingCommand.visibilityState.drawingPriority != rhs.drawingCommand.visibilityState.drawingPriority {
-                return lhs.drawingCommand.visibilityState.drawingPriority < rhs.drawingCommand.visibilityState.drawingPriority
-            }
-
-            return lhs.drawingCommand.instructionTypePriority < rhs.drawingCommand.instructionTypePriority
-        }
+        // sort drawing commands. if client is mixing in cached drawing
+        // commands, then it will need to sort again
+        drawingCommands.sort()
         
         return drawingCommands
     }
     
-    private static func createRecordId(dsf: DataSetFile, record: Record) -> String {
+    public static func createRecordId(dsf: DataSetFile, record: Record) -> String {
         return createRecordId(dsf: dsf, recordIdentifier: record.recordIdentifier())
     }
     
@@ -991,21 +978,21 @@ public class LuaRuleExecutor {
         let drawingInstructions = args.string
         let observedParameters = args.string
         
-        /*
-        var ftcd: String = ""
-        if let feature = featureById[featureId] {
-            ftcd = feature.frid.ftcd
+        let def = DataExchangeFormat(drawingInstructions)
+
+        // parse observed parameters for use by caches
+        var observedParameterValueByName: [String: String] = [:]
+        if observedParameters.count > 0 {
+            for entry in DataExchangeFormat(observedParameters).entries {
+                if let value = entry.arguments.first {
+                    observedParameterValueByName[entry.key] = value
+                }
+            }
         }
         
-        print("DEBUG: HostPortrayalEmit. featureId: \(featureId)(\(ftcd)), drawing instructions: \(drawingInstructions), observed parameters:  \(observedParameters)")
-         */
-        
-        // TODO: move DEF-parsingen out of the LuaRuleExecutor
-        
-        let def = DataExchangeFormat(drawingInstructions)
         for drawingCommand in DrawingCommandCreator.shared.create(def: def) {
             let drawingCommandId = "\(featureId)-\(self.drawingCommands.count)"
-            let featureDrawingCommand = FeatureDrawingCommand(featureId: featureId, drawingCommandId: drawingCommandId, drawingCommand: drawingCommand)
+            let featureDrawingCommand = FeatureDrawingCommand(featureId: featureId, drawingCommandId: drawingCommandId, drawingCommand: drawingCommand, observedParameters: observedParameterValueByName)
             self.drawingCommands.append(featureDrawingCommand)
         }
         
