@@ -67,38 +67,61 @@ public class LuaRuleExecutor {
     }
     
     private func registerHostFunctions() {
+        // IMPORTANT: every closure must capture self weakly to avoid a retain
+        // cycle.  The call chain is:
+        //   VirtualMachine.functionWrappers → SwiftFunctionWrapper → fn closure
+        //   → LuaRuleExecutor (self) → LuaVM → VirtualMachine
+        // Without [weak self] that cycle prevents LuaRuleExecutor from ever
+        // being deallocated, causing all Lua-side state to accumulate forever.
+
         if debug {
-            lua.registerFunction(.init(name: "HostDebuggerEntry", parameters: [String.arg, String.arg], fn: HostDebuggerEntry(_:)))
-            lua.registerFunction(.init(name: "HostDebuggerEntry", parameters: [String.arg, String.arg, Nil.arg], fn: HostDebuggerEntry(_:)))
+            lua.registerFunction(.init(name: "HostDebuggerEntry", parameters: [String.arg, String.arg], fn: { [weak self] args in self?.HostDebuggerEntry(args) ?? .nothing }))
+            lua.registerFunction(.init(name: "HostDebuggerEntry", parameters: [String.arg, String.arg, Nil.arg], fn: { [weak self] args in self?.HostDebuggerEntry(args) ?? .nothing }))
         }
-        
-        lua.registerFunction(.init(name: "HostGetFeatureIDs", fn: HostGetFeatureIDs(_:)))
-        lua.registerFunction(.init(name: "HostFeatureGetCode", parameters: [String.arg], fn: HostFeatureGetCode(_:)))
-        lua.registerFunction(.init(name: "HostGetFeatureTypeCodes", fn: HostGetFeatureTypeCodes(_:)))
-        lua.registerFunction(.init(name: "HostGetInformationTypeCodes", fn: HostGetInformationTypeCodes(_:)))
-        lua.registerFunction(.init(name: "HostGetInformationTypeInfo", parameters: [String.arg], fn: HostGetInformationTypeInfo(_:)))
-        lua.registerFunction(.init(name: "HostGetSimpleAttributeTypeCodes", fn: HostGetSimpleAttributeTypeCodes(_:)))
-        lua.registerFunction(.init(name: "HostGetComplexAttributeTypeCodes", fn: HostGetComplexAttributeTypeCodes(_:)))
-        lua.registerFunction(.init(name: "HostGetRoleTypeCodes", fn: HostGetRoleTypeCodes(_:)))
-        lua.registerFunction(.init(name: "HostGetInformationAssociationTypeCodes", fn: HostGetInformationAssociationTypeCodes(_:)))
-        lua.registerFunction(.init(name: "HostGetFeatureAssociationTypeCodes", fn: HostGetFeatureAssociationTypeCodes(_:)))
-        lua.registerFunction(.init(name: "HostGetFeatureTypeInfo", parameters: [String.arg], fn: HostGetFeatureTypeInfo(_:)))
-        lua.registerFunction(.init(name: "HostGetSimpleAttributeTypeInfo", parameters: [String.arg], fn: HostGetSimpleAttributeTypeInfo(_:)))
-        lua.registerFunction(.init(name: "HostFeatureGetSpatialAssociations", parameters: [String.arg], fn: HostFeatureGetSpatialAssociations(_:)))
-        lua.registerFunction(.init(name: "HostFeatureGetAssociatedInformationIDs", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetAssociatedInformationIDs(_:)))
-        lua.registerFunction(.init(name: "HostGetComplexAttributeTypeInfo", parameters: [String.arg], fn: HostGetComplexAttributeTypeInfo(_:)))
-        lua.registerFunction(.init(name: "HostFeatureGetSimpleAttribute", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetSimpleAttribute(_:)))
-        lua.registerFunction(.init(name: "HostFeatureGetComplexAttributeCount", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetComplexAttributeCount(_:)))
-        lua.registerFunction(.init(name: "HostInformationTypeGetSimpleAttribute", parameters: [String.arg, String.arg, String.arg], fn: HostInformationTypeGetSimpleAttribute(_:)))
-        lua.registerFunction(.init(name: "HostGetSpatial", parameters: [String.arg], fn: HostGetSpatial(_:)))
-        lua.registerFunction(.init(name: "HostFeatureGetAssociatedFeatureIDs", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetAssociatedFeatureIDs(_:)))
-        lua.registerFunction(.init(name: "HostSpatialGetAssociatedInformationIDs", parameters: [String.arg, String.arg, String.arg], fn: HostSpatialGetAssociatedInformationIDs(_:)))
-        lua.registerFunction(.init(name: "HostSpatialGetAssociatedFeatureIDs", parameters: [String.arg], fn: HostSpatialGetAssociatedFeatureIDs(_:)))
-        lua.registerFunction(.init(name: "HostInformationTypeGetCode", parameters: [String.arg], fn: HostInformationTypeGetCode(_:)))
-        lua.registerFunction(.init(name: "HostPortrayalEmit", parameters: [String.arg, String.arg, String.arg], fn: HostPortrayalEmit(_:)))
-        
+
+        lua.registerFunction(.init(name: "HostGetFeatureIDs", fn: { [weak self] args in self?.HostGetFeatureIDs(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostFeatureGetCode", parameters: [String.arg], fn: { [weak self] args in self?.HostFeatureGetCode(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetFeatureTypeCodes", fn: { [weak self] args in self?.HostGetFeatureTypeCodes(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetInformationTypeCodes", fn: { [weak self] args in self?.HostGetInformationTypeCodes(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetInformationTypeInfo", parameters: [String.arg], fn: { [weak self] args in self?.HostGetInformationTypeInfo(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetSimpleAttributeTypeCodes", fn: { [weak self] args in self?.HostGetSimpleAttributeTypeCodes(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetComplexAttributeTypeCodes", fn: { [weak self] args in self?.HostGetComplexAttributeTypeCodes(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetRoleTypeCodes", fn: { [weak self] args in self?.HostGetRoleTypeCodes(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetInformationAssociationTypeCodes", fn: { [weak self] args in self?.HostGetInformationAssociationTypeCodes(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetFeatureAssociationTypeCodes", fn: { [weak self] args in self?.HostGetFeatureAssociationTypeCodes(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetFeatureTypeInfo", parameters: [String.arg], fn: { [weak self] args in self?.HostGetFeatureTypeInfo(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetSimpleAttributeTypeInfo", parameters: [String.arg], fn: { [weak self] args in self?.HostGetSimpleAttributeTypeInfo(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostFeatureGetSpatialAssociations", parameters: [String.arg], fn: { [weak self] args in self?.HostFeatureGetSpatialAssociations(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostFeatureGetAssociatedInformationIDs", parameters: [String.arg, String.arg, String.arg], fn: { [weak self] args in self?.HostFeatureGetAssociatedInformationIDs(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetComplexAttributeTypeInfo", parameters: [String.arg], fn: { [weak self] args in self?.HostGetComplexAttributeTypeInfo(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostFeatureGetSimpleAttribute", parameters: [String.arg, String.arg, String.arg], fn: { [weak self] args in self?.HostFeatureGetSimpleAttribute(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostFeatureGetComplexAttributeCount", parameters: [String.arg, String.arg, String.arg], fn: { [weak self] args in self?.HostFeatureGetComplexAttributeCount(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostInformationTypeGetSimpleAttribute", parameters: [String.arg, String.arg, String.arg], fn: { [weak self] args in self?.HostInformationTypeGetSimpleAttribute(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetSpatial", parameters: [String.arg], fn: { [weak self] args in self?.HostGetSpatial(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostFeatureGetAssociatedFeatureIDs", parameters: [String.arg, String.arg, String.arg], fn: { [weak self] args in self?.HostFeatureGetAssociatedFeatureIDs(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostSpatialGetAssociatedInformationIDs", parameters: [String.arg, String.arg, String.arg], fn: { [weak self] args in self?.HostSpatialGetAssociatedInformationIDs(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostSpatialGetAssociatedFeatureIDs", parameters: [String.arg], fn: { [weak self] args in self?.HostSpatialGetAssociatedFeatureIDs(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostInformationTypeGetCode", parameters: [String.arg], fn: { [weak self] args in self?.HostInformationTypeGetCode(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostPortrayalEmit", parameters: [String.arg, String.arg, String.arg], fn: { [weak self] args in self?.HostPortrayalEmit(args) ?? .nothing }))
     }
     
+    deinit {
+        // lua4swift's StoredValue uses `unowned var vm: VirtualMachine`.
+        // Swift does not guarantee the order in which stored properties are
+        // released after deinit, so any cache that holds StoredValue objects
+        // (Function, Table, etc.) might outlive VirtualMachine — causing an
+        // "unowned reference was already deallocated" crash on deinit.
+        //
+        // By clearing them explicitly here, while the deinit body is still
+        // executing and ALL stored properties (including `lua`) are guaranteed
+        // to still be alive, we ensure StoredValue.deinit can safely call
+        // vm.unref() without the VM already being gone.
+        callFunctionCache.removeAll()
+        _luaCreateFeatureType.removeAll()
+        _luaCreateSimpleAttribute.removeAll()
+        _luaGetUnknownAttributeString = nil
+    }
+
     public func clearState() {
         featureById.removeAll()
         drawingCommands.removeAll()
@@ -166,6 +189,12 @@ public class LuaRuleExecutor {
         // sort drawing commands. if client is mixing in cached drawing
         // commands, then it will need to sort again
         drawingCommands.sort()
+        
+        // Run a full Lua GC cycle to reclaim tables and other temporaries
+        // created during portrayal.  Without this, Lua's incremental
+        // collector falls behind when portrayal() is called repeatedly
+        // (e.g. every tile render), causing unbounded memory growth.
+        lua.collectGarbage()
         
         return drawingCommands
     }
@@ -316,41 +345,60 @@ public class LuaRuleExecutor {
         return .value(toLuaTable(featureCatalogue.featureAssociationByCode.keys.sorted()))
     }
     
+    // Cache of compiled Lua wrapper functions, keyed by "functionName:nilPattern"
+    // where nilPattern is a string of 'v' (value) and 'n' (nil) characters,
+    // one per argument position.  Caching avoids recompiling the same Lua
+    // chunk on every call, which was the primary source of memory growth.
+    private var callFunctionCache: [String: Function] = [:]
+
     /**
-     * To make it easier to call Lua including handling of nil arguments
+     * To make it easier to call Lua including handling of nil arguments.
+     *
+     * The compiled wrapper chunk is cached and reused on every subsequent
+     * call with the same function name and nil-pattern, so `luaL_loadstring`
+     * is invoked at most once per unique (functionName, nil-pattern) pair.
      */
     private func call(_ functionName: String, _ args: [Value?]) -> Value? {
         
         var nonNilArgs: [Value] = []
+        var placeholders: [String] = []
         
-        var luaCode = "local args = {...} \n return \(functionName)("
         for arg in args {
             if let arg = arg {
-                luaCode.append("args[\(nonNilArgs.count + 1)]")
                 nonNilArgs.append(arg)
+                placeholders.append("args[\(nonNilArgs.count)]")
             } else {
-                luaCode.append("nil")
+                placeholders.append("nil")
             }
-            luaCode.append(", ")
         }
-        if luaCode.hasSuffix(", ") {
-            luaCode.removeLast(2)
-        }
-        luaCode.append(")")
         
-        do {
-            let result = try lua.execute(string: luaCode, args: nonNilArgs)
-            if case .values(let values) = result, values.count == 1, let v = values.first {
-                return v
+        // Build a cache key that encodes the function name and which positions
+        // are nil so the same compiled chunk can be reused across calls.
+        let nilPattern = args.map { $0 == nil ? "n" : "v" }.joined()
+        let cacheKey = "\(functionName):\(nilPattern)"
+        
+        let fn: Function
+        if let cached = callFunctionCache[cacheKey] {
+            fn = cached
+        } else {
+            let luaCode = "local args = {...}\nreturn \(functionName)(\(placeholders.joined(separator: ", ")))"
+            switch lua.vm.createFunction(luaCode) {
+            case .value(let f):
+                callFunctionCache[cacheKey] = f
+                fn = f
+            case .error(let message):
+                print("ERROR: \(functionName) compile problem. \(message)")
+                return nil
             }
-            
-            if debug {
-                print("DEBUG: \(functionName) returned nil")
-            }
-            
-            return nil
-        } catch {
-            print("ERROR: \(functionName) problem. \(error)")
+        }
+        
+        let result = fn.call(nonNilArgs)
+        if case .values(let values) = result, values.count == 1, let v = values.first {
+            return v
+        }
+        
+        if debug {
+            print("DEBUG: \(functionName) returned nil")
         }
         
         return nil
