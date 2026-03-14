@@ -67,36 +67,42 @@ public class LuaRuleExecutor {
     }
     
     private func registerHostFunctions() {
+        // IMPORTANT: every closure must capture self weakly to avoid a retain
+        // cycle.  The call chain is:
+        //   VirtualMachine.functionWrappers → SwiftFunctionWrapper → fn closure
+        //   → LuaRuleExecutor (self) → LuaVM → VirtualMachine
+        // Without [weak self] that cycle prevents LuaRuleExecutor from ever
+        // being deallocated, causing all Lua-side state to accumulate forever.
+
         if debug {
-            lua.registerFunction(.init(name: "HostDebuggerEntry", parameters: [String.arg, String.arg], fn: HostDebuggerEntry(_:)))
-            lua.registerFunction(.init(name: "HostDebuggerEntry", parameters: [String.arg, String.arg, Nil.arg], fn: HostDebuggerEntry(_:)))
+            lua.registerFunction(.init(name: "HostDebuggerEntry", parameters: [String.arg, String.arg], fn: { [weak self] args in self?.HostDebuggerEntry(args) ?? .nothing }))
+            lua.registerFunction(.init(name: "HostDebuggerEntry", parameters: [String.arg, String.arg, Nil.arg], fn: { [weak self] args in self?.HostDebuggerEntry(args) ?? .nothing }))
         }
-        
-        lua.registerFunction(.init(name: "HostGetFeatureIDs", fn: HostGetFeatureIDs(_:)))
-        lua.registerFunction(.init(name: "HostFeatureGetCode", parameters: [String.arg], fn: HostFeatureGetCode(_:)))
-        lua.registerFunction(.init(name: "HostGetFeatureTypeCodes", fn: HostGetFeatureTypeCodes(_:)))
-        lua.registerFunction(.init(name: "HostGetInformationTypeCodes", fn: HostGetInformationTypeCodes(_:)))
-        lua.registerFunction(.init(name: "HostGetInformationTypeInfo", parameters: [String.arg], fn: HostGetInformationTypeInfo(_:)))
-        lua.registerFunction(.init(name: "HostGetSimpleAttributeTypeCodes", fn: HostGetSimpleAttributeTypeCodes(_:)))
-        lua.registerFunction(.init(name: "HostGetComplexAttributeTypeCodes", fn: HostGetComplexAttributeTypeCodes(_:)))
-        lua.registerFunction(.init(name: "HostGetRoleTypeCodes", fn: HostGetRoleTypeCodes(_:)))
-        lua.registerFunction(.init(name: "HostGetInformationAssociationTypeCodes", fn: HostGetInformationAssociationTypeCodes(_:)))
-        lua.registerFunction(.init(name: "HostGetFeatureAssociationTypeCodes", fn: HostGetFeatureAssociationTypeCodes(_:)))
-        lua.registerFunction(.init(name: "HostGetFeatureTypeInfo", parameters: [String.arg], fn: HostGetFeatureTypeInfo(_:)))
-        lua.registerFunction(.init(name: "HostGetSimpleAttributeTypeInfo", parameters: [String.arg], fn: HostGetSimpleAttributeTypeInfo(_:)))
-        lua.registerFunction(.init(name: "HostFeatureGetSpatialAssociations", parameters: [String.arg], fn: HostFeatureGetSpatialAssociations(_:)))
-        lua.registerFunction(.init(name: "HostFeatureGetAssociatedInformationIDs", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetAssociatedInformationIDs(_:)))
-        lua.registerFunction(.init(name: "HostGetComplexAttributeTypeInfo", parameters: [String.arg], fn: HostGetComplexAttributeTypeInfo(_:)))
-        lua.registerFunction(.init(name: "HostFeatureGetSimpleAttribute", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetSimpleAttribute(_:)))
-        lua.registerFunction(.init(name: "HostFeatureGetComplexAttributeCount", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetComplexAttributeCount(_:)))
-        lua.registerFunction(.init(name: "HostInformationTypeGetSimpleAttribute", parameters: [String.arg, String.arg, String.arg], fn: HostInformationTypeGetSimpleAttribute(_:)))
-        lua.registerFunction(.init(name: "HostGetSpatial", parameters: [String.arg], fn: HostGetSpatial(_:)))
-        lua.registerFunction(.init(name: "HostFeatureGetAssociatedFeatureIDs", parameters: [String.arg, String.arg, String.arg], fn: HostFeatureGetAssociatedFeatureIDs(_:)))
-        lua.registerFunction(.init(name: "HostSpatialGetAssociatedInformationIDs", parameters: [String.arg, String.arg, String.arg], fn: HostSpatialGetAssociatedInformationIDs(_:)))
-        lua.registerFunction(.init(name: "HostSpatialGetAssociatedFeatureIDs", parameters: [String.arg], fn: HostSpatialGetAssociatedFeatureIDs(_:)))
-        lua.registerFunction(.init(name: "HostInformationTypeGetCode", parameters: [String.arg], fn: HostInformationTypeGetCode(_:)))
-        lua.registerFunction(.init(name: "HostPortrayalEmit", parameters: [String.arg, String.arg, String.arg], fn: HostPortrayalEmit(_:)))
-        
+
+        lua.registerFunction(.init(name: "HostGetFeatureIDs", fn: { [weak self] args in self?.HostGetFeatureIDs(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostFeatureGetCode", parameters: [String.arg], fn: { [weak self] args in self?.HostFeatureGetCode(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetFeatureTypeCodes", fn: { [weak self] args in self?.HostGetFeatureTypeCodes(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetInformationTypeCodes", fn: { [weak self] args in self?.HostGetInformationTypeCodes(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetInformationTypeInfo", parameters: [String.arg], fn: { [weak self] args in self?.HostGetInformationTypeInfo(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetSimpleAttributeTypeCodes", fn: { [weak self] args in self?.HostGetSimpleAttributeTypeCodes(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetComplexAttributeTypeCodes", fn: { [weak self] args in self?.HostGetComplexAttributeTypeCodes(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetRoleTypeCodes", fn: { [weak self] args in self?.HostGetRoleTypeCodes(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetInformationAssociationTypeCodes", fn: { [weak self] args in self?.HostGetInformationAssociationTypeCodes(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetFeatureAssociationTypeCodes", fn: { [weak self] args in self?.HostGetFeatureAssociationTypeCodes(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetFeatureTypeInfo", parameters: [String.arg], fn: { [weak self] args in self?.HostGetFeatureTypeInfo(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetSimpleAttributeTypeInfo", parameters: [String.arg], fn: { [weak self] args in self?.HostGetSimpleAttributeTypeInfo(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostFeatureGetSpatialAssociations", parameters: [String.arg], fn: { [weak self] args in self?.HostFeatureGetSpatialAssociations(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostFeatureGetAssociatedInformationIDs", parameters: [String.arg, String.arg, String.arg], fn: { [weak self] args in self?.HostFeatureGetAssociatedInformationIDs(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetComplexAttributeTypeInfo", parameters: [String.arg], fn: { [weak self] args in self?.HostGetComplexAttributeTypeInfo(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostFeatureGetSimpleAttribute", parameters: [String.arg, String.arg, String.arg], fn: { [weak self] args in self?.HostFeatureGetSimpleAttribute(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostFeatureGetComplexAttributeCount", parameters: [String.arg, String.arg, String.arg], fn: { [weak self] args in self?.HostFeatureGetComplexAttributeCount(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostInformationTypeGetSimpleAttribute", parameters: [String.arg, String.arg, String.arg], fn: { [weak self] args in self?.HostInformationTypeGetSimpleAttribute(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostGetSpatial", parameters: [String.arg], fn: { [weak self] args in self?.HostGetSpatial(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostFeatureGetAssociatedFeatureIDs", parameters: [String.arg, String.arg, String.arg], fn: { [weak self] args in self?.HostFeatureGetAssociatedFeatureIDs(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostSpatialGetAssociatedInformationIDs", parameters: [String.arg, String.arg, String.arg], fn: { [weak self] args in self?.HostSpatialGetAssociatedInformationIDs(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostSpatialGetAssociatedFeatureIDs", parameters: [String.arg], fn: { [weak self] args in self?.HostSpatialGetAssociatedFeatureIDs(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostInformationTypeGetCode", parameters: [String.arg], fn: { [weak self] args in self?.HostInformationTypeGetCode(args) ?? .nothing }))
+        lua.registerFunction(.init(name: "HostPortrayalEmit", parameters: [String.arg, String.arg, String.arg], fn: { [weak self] args in self?.HostPortrayalEmit(args) ?? .nothing }))
     }
     
     public func clearState() {
