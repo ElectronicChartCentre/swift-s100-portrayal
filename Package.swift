@@ -13,7 +13,7 @@ let package = Package(
         ),
     ],
     dependencies: [
-        .package(url: "https://github.com/ElectronicChartCentre/swift-s101", from: "0.0.1"),
+        .package(url: "https://github.com/ElectronicChartCentre/swift-s101", from: "0.0.2"),
         //.package(path: "../swift-s101"),
         .package(url: "https://github.com/ElectronicChartCentre/swift-s100-feature-catalogue", from: "0.0.1"),
         //.package(path: "../swift-s100-feature-catalogue"),
