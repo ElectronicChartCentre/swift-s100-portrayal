@@ -493,9 +493,46 @@ public struct CoreGraphicsRenderer: Renderer {
         context.textPosition = CGPoint(x: lineBounds.width * adjustFactorX, y: lineBounds.height * adjustFactorY)
         CTLineDraw(line, context)
         context.restoreGState()
-        #endif
+        #elseif canImport(Silica)
+        // Linux: use Silica's toy text API (backed by Cairo)
         
-        // TODO: similar text for non-Apple platforms
+        // Map S-101 font weight/slant to Cairo equivalents
+        let cairoWeight: Cairo.FontWeight = (textInstruction.textStyleState.fontWeight == .Bold) ? .bold : .normal
+        let cairoSlant: Cairo.FontSlant = (textInstruction.textStyleState.fontSlant == .Italics) ? .italic : .normal
+        
+        // Font size is stored in mm; convert to pixels
+        let fontSizePx = screenResolution.pixels(mm: textInstruction.textStyleState.fontSize)
+        
+        context.saveGState()
+        context.translateBy(x: coordinateXY.x, y: coordinateXY.y)
+        
+        // Combined vertical offset + local offset
+        var txmm: Double = 0
+        var tymm: Double = textInstruction.textStyleState.verticalOffset
+        if let xmm = textInstruction.transformState.localOffsetXMM, let ymm = textInstruction.transformState.localOffsetYMM {
+            txmm += xmm
+            tymm += ymm
+        }
+        let txpx = screenResolution.pixels(mm: txmm)
+        let typx = screenResolution.pixels(mm: tymm)
+        context.translateBy(x: txpx, y: typx)
+        
+        // Set font face, size, and color
+        context.selectToyFont(family: "sans-serif", slant: cairoSlant, weight: cairoWeight)
+        context.fontSize = fontSizePx
+        if let color = cgcolor(textInstruction.textStyleState.fontColorToken, transparency: textInstruction.textStyleState.fontColorTransparency) {
+            context.setFillColor(color)
+        }
+        
+        // Measure text for alignment
+        let textSize = context.toyTextExtents(textInstruction.text)
+        let alignOffsetX = textSize.width * adjustFactorX
+        let alignOffsetY = textSize.height * adjustFactorY
+        
+        context.translateBy(x: alignOffsetX, y: alignOffsetY)
+        context.show(toyText: textInstruction.text)
+        context.restoreGState()
+        #endif
     }
     
     private func strokePath(_ geometryXY: Geometry) {
