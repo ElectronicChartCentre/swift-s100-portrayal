@@ -494,14 +494,71 @@ public struct CoreGraphicsRenderer: Renderer {
         CTLineDraw(line, context)
         context.restoreGState()
         #elseif canImport(Silica)
-        // Linux: use Silica's toy text API (backed by Cairo)
+        // Linux: use Silica's CGFont + toy text API (backed by Cairo/FreeType)
         
-        // Map S-101 font weight/slant to Cairo equivalents
-        let cairoWeight: Cairo.FontWeight = (textInstruction.textStyleState.fontWeight == .Bold) ? .bold : .normal
-        let cairoSlant: Cairo.FontSlant = (textInstruction.textStyleState.fontSlant == .Italics) ? .italic : .normal
-        
-        // Font size is stored in mm; convert to pixels
+        // Font size: mm → pixels (surface is pixel-sized)
         let fontSizePx = screenResolution.pixels(mm: textInstruction.textStyleState.fontSize)
+        
+        // Resolve font name. S-101 doesn't mandate a specific face, use sans-serif.
+        // CGFont.init looks up the name via FontConfig.
+        let fontName: String
+        switch (textInstruction.textStyleState.fontWeight, textInstruction.textStyleState.fontSlant) {
+        case (.Bold, .Italics): fontName = "sans-serif:Bold:Italic"
+        case (.Bold, _):        fontName = "sans-serif:Bold"
+        case (_, .Italics):     fontName = "sans-serif:Italic"
+        default:                fontName = "sans-serif"
+        }
+        guard let cgFont = CGFont(name: fontName) ?? CGFont(name: "sans-serif") else {
+            return
+        }
+        
+        // Set font — this sets the face; size is applied via textMatrix in show(toyText:)
+        context.setFont(cgFont)
+        context.fontSize = fontSizePx
+        
+        // Silica's CGContext initializer flips the CTM (yy = -1) so that CoreGraphics-style
+        // coordinates work correctly. However, the font matrix is NOT affected by the CTM flip,
+        // so text rendered with show(toyText:) ends up upside-down. We counteract this by
+        // setting the textMatrix to a y-flipped identity, which show(toyText:) incorporates
+        // into its font matrix calculation (scale(fontSize,fontSize) * textMatrix).
+        context.textMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 0)
+        
+        // Use font extents (in font units, scaled by fontSize) for alignment.
+        // ascent + descent = total glyph height; ascent is above the baseline.
+        let fontExtents = cgFont.scaledFont.fontExtents
+        let ascentPx  = fontExtents.ascent  * fontSizePx
+        let descentPx = fontExtents.descent * fontSizePx  // positive value (distance below baseline)
+        let totalHeightPx = ascentPx + descentPx
+        
+        // Horizontal: we don't have per-string advance without measuring, so use ascent as a
+        // rough em-square approximation. For a more accurate width, the advance per glyph
+        // from fontExtents.max_x_advance can be used as a worst-case estimate.
+        // Here we approximate: width ≈ number of characters × max_x_advance × fontSizePx
+        let charCount = Double(textInstruction.text.count)
+        let textWidthPx = fontExtents.max_x_advance * fontSizePx * charCount
+        
+        // Alignment offsets.
+        // X: Start=left-aligned (0), Center=shift left by half width, End=shift left by full width
+        // Y: Cairo places the baseline at the move-to point; ascent is above it.
+        //    Bottom: move baseline up so bottom of text is at anchor → offset = +descentPx
+        //    Center: center of text at anchor → offset = descentPx - totalHeightPx/2
+        //    Top:    top of text at anchor → offset = descentPx - totalHeightPx = -ascentPx
+        let alignOffsetX = textWidthPx * adjustFactorX
+        let alignOffsetY: Double
+        switch textInstruction.textStyleState.textAlignVertical {
+        case TextAlignVertical.Bottom:
+            alignOffsetY = descentPx
+        case TextAlignVertical.Center:
+            alignOffsetY = descentPx - totalHeightPx / 2.0
+        case TextAlignVertical.Top:
+            alignOffsetY = -ascentPx
+        default:
+            alignOffsetY = 0
+        }
+        
+        if let color = cgcolor(textInstruction.textStyleState.fontColorToken, transparency: textInstruction.textStyleState.fontColorTransparency) {
+            context.setFillColor(color)
+        }
         
         context.saveGState()
         context.translateBy(x: coordinateXY.x, y: coordinateXY.y)
@@ -515,21 +572,8 @@ public struct CoreGraphicsRenderer: Renderer {
         }
         let txpx = screenResolution.pixels(mm: txmm)
         let typx = screenResolution.pixels(mm: tymm)
-        context.translateBy(x: txpx, y: typx)
+        context.translateBy(x: txpx + alignOffsetX, y: typx + alignOffsetY)
         
-        // Set font face, size, and color
-        context.selectToyFont(family: "sans-serif", slant: cairoSlant, weight: cairoWeight)
-        context.fontSize = fontSizePx
-        if let color = cgcolor(textInstruction.textStyleState.fontColorToken, transparency: textInstruction.textStyleState.fontColorTransparency) {
-            context.setFillColor(color)
-        }
-        
-        // Measure text for alignment
-        let textSize = context.toyTextExtents(textInstruction.text)
-        let alignOffsetX = textSize.width * adjustFactorX
-        let alignOffsetY = textSize.height * adjustFactorY
-        
-        context.translateBy(x: alignOffsetX, y: alignOffsetY)
         context.show(toyText: textInstruction.text)
         context.restoreGState()
         #endif
