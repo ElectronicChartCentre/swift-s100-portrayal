@@ -525,27 +525,24 @@ public struct CoreGraphicsRenderer: Renderer {
         // into its font matrix calculation (scale(fontSize,fontSize) * textMatrix).
         context.textMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 0)
         
-        // Use font extents (in font units, scaled by fontSize) for alignment.
-        // ascent + descent = total glyph height; ascent is above the baseline.
+        // Measure text width using per-glyph advances (accurate, same as CoreText on macOS).
+        let textWidthPx = cgFont.singleLineWidth(text: textInstruction.text, fontSize: fontSizePx)
+        
+        // Vertical metrics: use glyph-space-to-text-space scaling (fontSize / unitsPerEm).
+        // cairo_font_extents_t values (ascent/descent) are in glyph units.
         let fontExtents = cgFont.scaledFont.fontExtents
-        let ascentPx  = fontExtents.ascent  * fontSizePx
-        let descentPx = fontExtents.descent * fontSizePx  // positive value (distance below baseline)
+        let glyphScale = fontSizePx / Double(cgFont.scaledFont.unitsPerEm)
+        let ascentPx   = fontExtents.ascent  * glyphScale
+        let descentPx  = fontExtents.descent * glyphScale  // positive (distance below baseline)
         let totalHeightPx = ascentPx + descentPx
         
-        // Horizontal: we don't have per-string advance without measuring, so use ascent as a
-        // rough em-square approximation. For a more accurate width, the advance per glyph
-        // from fontExtents.max_x_advance can be used as a worst-case estimate.
-        // Here we approximate: width ≈ number of characters × max_x_advance × fontSizePx
-        let charCount = Double(textInstruction.text.count)
-        let textWidthPx = fontExtents.max_x_advance * fontSizePx * charCount
-        
         // Alignment offsets.
-        // X: Start=left-aligned (0), Center=shift left by half width, End=shift left by full width
-        // Y: Cairo places the baseline at the move-to point; ascent is above it.
-        //    Bottom: move baseline up so bottom of text is at anchor → offset = +descentPx
-        //    Center: center of text at anchor → offset = descentPx - totalHeightPx/2
-        //    Top:    top of text at anchor → offset = descentPx - totalHeightPx = -ascentPx
-        let alignOffsetX = textWidthPx * adjustFactorX
+        // X: Start=left-aligned (0), Center=shift left by half width, End=shift left by full width.
+        // Y: Cairo places the baseline at the current point; ascent extends upward.
+        //    Bottom: anchor at bottom of text → raise baseline by descent
+        //    Center: anchor at vertical center → baseline at midpoint offset
+        //    Top:    anchor at top of text → lower baseline by ascent
+        let alignOffsetX = Double(textWidthPx) * adjustFactorX
         let alignOffsetY: Double
         switch textInstruction.textStyleState.textAlignVertical {
         case TextAlignVertical.Bottom:
