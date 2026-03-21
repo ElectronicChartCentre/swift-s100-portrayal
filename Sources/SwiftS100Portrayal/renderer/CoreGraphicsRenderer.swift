@@ -496,8 +496,10 @@ public struct CoreGraphicsRenderer: Renderer {
         #elseif canImport(Silica)
         // Linux: use Silica's CGFont + toy text API (backed by Cairo/FreeType)
         
-        // Font size: mm → pixels (surface is pixel-sized)
-        let fontSizePx = screenResolution.pixels(mm: textInstruction.textStyleState.fontSize)
+        // fontSize is in typographic points (1/72 inch), same as CoreText on macOS.
+        // The surface is pixel-sized (widthPixel = widthPoint * pixelsPrPoint), so
+        // we convert: fontSizePx = fontSize_pt * pixelsPrPoint.
+        let fontSizePx = textInstruction.textStyleState.fontSize * Double(pixelsPrPoint)
         
         // Resolve font name. S-101 doesn't mandate a specific face, use sans-serif.
         // CGFont.init looks up the name via FontConfig.
