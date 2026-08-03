@@ -21,7 +21,7 @@ let package = Package(
         //.package(path: "../ext/SwiftyLua"),
         .package(url: "https://github.com/halset/Silica", from: "2.0.3"),
         //.package(path: "../ext/Silica"),
-        .package(url: "https://github.com/ElectronicChartCentre/swift-vector-tile", from: "0.0.1"),
+        .package(url: "https://github.com/ElectronicChartCentre/swift-vector-tile", from: "0.0.2"),
         //.package(path: "../swift-vector-tile"),
     ],
     targets: [
