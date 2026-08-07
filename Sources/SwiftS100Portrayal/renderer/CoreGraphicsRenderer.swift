@@ -493,9 +493,89 @@ public struct CoreGraphicsRenderer: Renderer {
         context.textPosition = CGPoint(x: lineBounds.width * adjustFactorX, y: lineBounds.height * adjustFactorY)
         CTLineDraw(line, context)
         context.restoreGState()
-        #endif
+        #elseif canImport(Silica)
+        // Linux: use Silica's CGFont + toy text API (backed by Cairo/FreeType)
         
-        // TODO: similar text for non-Apple platforms
+        // fontSize is in typographic points (1/72 inch), same as CoreText on macOS.
+        // The surface is pixel-sized (widthPixel = widthPoint * pixelsPrPoint), so
+        // we convert: fontSizePx = fontSize_pt * pixelsPrPoint.
+        let fontSizePx = textInstruction.textStyleState.fontSize * Double(pixelsPrPoint)
+        
+        // Resolve font name. S-101 doesn't mandate a specific face, use sans-serif.
+        // CGFont.init looks up the name via FontConfig.
+        let fontName: String
+        switch (textInstruction.textStyleState.fontWeight, textInstruction.textStyleState.fontSlant) {
+        case (.Bold, .Italics): fontName = "sans-serif:Bold:Italic"
+        case (.Bold, _):        fontName = "sans-serif:Bold"
+        case (_, .Italics):     fontName = "sans-serif:Italic"
+        default:                fontName = "sans-serif"
+        }
+        guard let cgFont = CGFont(name: fontName) ?? CGFont(name: "sans-serif") else {
+            return
+        }
+        
+        // Set font — this sets the face; size is applied via textMatrix in show(toyText:)
+        context.setFont(cgFont)
+        context.fontSize = fontSizePx
+        
+        // Silica's CGContext initializer flips the CTM (yy = -1) so that CoreGraphics-style
+        // coordinates work correctly. However, the font matrix is NOT affected by the CTM flip,
+        // so text rendered with show(toyText:) ends up upside-down. We counteract this by
+        // setting the textMatrix to a y-flipped identity, which show(toyText:) incorporates
+        // into its font matrix calculation (scale(fontSize,fontSize) * textMatrix).
+        context.textMatrix = CGAffineTransform(a: 1, b: 0, c: 0, d: -1, tx: 0, ty: 0)
+        
+        // Measure text width using per-glyph advances (accurate, same as CoreText on macOS).
+        let textWidthPx = cgFont.singleLineWidth(text: textInstruction.text, fontSize: fontSizePx)
+        
+        // Vertical metrics: use glyph-space-to-text-space scaling (fontSize / unitsPerEm).
+        // cairo_font_extents_t values (ascent/descent) are in glyph units.
+        let fontExtents = cgFont.scaledFont.fontExtents
+        let glyphScale = fontSizePx / Double(cgFont.scaledFont.unitsPerEm)
+        let ascentPx   = fontExtents.ascent  * glyphScale
+        let descentPx  = fontExtents.descent * glyphScale  // positive (distance below baseline)
+        let totalHeightPx = ascentPx + descentPx
+        
+        // Alignment offsets.
+        // X: Start=left-aligned (0), Center=shift left by half width, End=shift left by full width.
+        // Y: Cairo places the baseline at the current point; ascent extends upward.
+        //    Bottom: anchor at bottom of text → raise baseline by descent
+        //    Center: anchor at vertical center → baseline at midpoint offset
+        //    Top:    anchor at top of text → lower baseline by ascent
+        let alignOffsetX = Double(textWidthPx) * adjustFactorX
+        let alignOffsetY: Double
+        switch textInstruction.textStyleState.textAlignVertical {
+        case TextAlignVertical.Bottom:
+            alignOffsetY = descentPx
+        case TextAlignVertical.Center:
+            alignOffsetY = descentPx - totalHeightPx / 2.0
+        case TextAlignVertical.Top:
+            alignOffsetY = -ascentPx
+        default:
+            alignOffsetY = 0
+        }
+        
+        if let color = cgcolor(textInstruction.textStyleState.fontColorToken, transparency: textInstruction.textStyleState.fontColorTransparency) {
+            context.setFillColor(color)
+        }
+        
+        context.saveGState()
+        context.translateBy(x: coordinateXY.x, y: coordinateXY.y)
+        
+        // Combined vertical offset + local offset
+        var txmm: Double = 0
+        var tymm: Double = textInstruction.textStyleState.verticalOffset
+        if let xmm = textInstruction.transformState.localOffsetXMM, let ymm = textInstruction.transformState.localOffsetYMM {
+            txmm += xmm
+            tymm += ymm
+        }
+        let txpx = screenResolution.pixels(mm: txmm)
+        let typx = screenResolution.pixels(mm: tymm)
+        context.translateBy(x: txpx + alignOffsetX, y: typx + alignOffsetY)
+        
+        context.show(toyText: textInstruction.text)
+        context.restoreGState()
+        #endif
     }
     
     private func strokePath(_ geometryXY: Geometry) {
